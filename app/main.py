@@ -33,8 +33,11 @@ class MakeRequestParams(BaseModel):
     body: str = ''
     headers: List[Tuple[str, str]]
 
+class MakeRequestData(BaseModel):
+    request: MakeRequestParams
+
 class MakeRequestRequest(BaseRequest):
-    params: MakeRequestParams
+    params: MakeRequestData
 
 
 class ApiRequest:
@@ -51,7 +54,7 @@ class ApiRequest:
 def get_params(request):
     params = getattr(request, 'params', None)
     if not params:
-        raise HTTPException(status_code=422, detail="Wrong data format. All request data must be inside `params` field")
+        raise HTTPException(status_code=422, detail='Wrong data format. All request data must be inside `params` field')
     return params
 
 
@@ -69,7 +72,10 @@ async def sign(request: SignRequest):
 
 @app.post("/makeRequest")
 async def make_request(request: MakeRequestRequest):
-    make_request_params = get_params(request)
+    make_request_data = get_params(request)
+    make_request_params = getattr(make_request_data, 'request')
+    if not make_request_params:
+        raise HTTPException(status_code=422, detail='No request data. Field `request` does not exist or is empty')
     Pair = namedtuple('Pair', ['name', 'value'])
     query = None
     if make_request_params.query:

@@ -39,12 +39,14 @@ def make_request_urllib() -> dict:
         method='POST',
         data=json.dumps({
             'params': {
-                'method': 'POST',
-                'origin': 'https://postman-echo.com',
-                'path': '/post',
-                'headers': [],
-                # 'query': [],
-                # 'body': '',
+                'request': {
+                    'method': 'POST',
+                    'origin': 'https://postman-echo.com',
+                    'path': '/post',
+                    'headers': [],
+                    # 'query': [],
+                    # 'body': '',
+                }
             }
         }).encode()
     )
@@ -101,6 +103,7 @@ def make_request_eb():
 
 
 if __name__ == '__main__':
+    # You can uncomment these functions one by one and check their responses
     # response = sign()
     # response = make_request_urllib()
     response = make_request_eb()
