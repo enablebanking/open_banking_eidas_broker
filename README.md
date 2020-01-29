@@ -8,7 +8,7 @@ In order to build an image you need to:
     - `server.key`  # private server (proxy) certificate
     - `server.crt`  # public server (proxy) key
     - `ca.crt`  # public certificate authority certificate
-If you want to generate self-signed certificates, see [how to create self-signed certificates](GENERATING_CERTIFICATES.md)
+If you want to generate self-signed certificates, see instructions below
 5. Put signature certificates into `signature_certs/` directory. You can put certificates under this dirrectory in an arbitrary order. Later these certificates are going to be accessed by path (A.K.A. `key_id`) from the request.
 4. Go to the directory with `Dockerfile`
 5. Run `docker build -t <image_name> .` (probably you need to prepend this command with `sudo`)<br/>
@@ -24,7 +24,34 @@ docker run -d \
 
 5. Go to `http(s)://localhost:<host_port>` to verify that everything works (you will need to provide proxy certificates with you requirest in order to see the page)
 
-# Check available endpoints
+## Check available endpoints
 Container endpoints documentation is available at `/docs` or `/redoc`:<br/>
 `http://localhost:<host_port>/docs`<br/>
 `http://localhost:<host_port>/redoc`
+
+
+# Certificates
+## CA
+Create CA key and certificate for signing server (and client) certificates<br/>
+`openssl genrsa -out ca.key 4096`<br/>
+Replace values under `-subj` parameter by appropriate (if necessary)<br/>
+`openssl req -new -x509 -days 365 -key ca.key -out ca.crt -subj "/C=FI/ST=Uusima/L=Helsinki/O=ExampleOrganisation/CN=www.bigorg.com"`
+
+## Server
+`openssl genrsa -out server.key 4096`<br/>
+Make sure the `CN` parameter matches the location of you host<br/>
+`openssl req -new -key server.key -out server.csr -subj "/C=FI/ST=Uusima/L=Helsinki/O=ExampleServerOrganisation/CN=localhost"`<br/>
+Signing server certificate with ca.key. It is mandatory not to use md5 message digest. That's why we use sha256<br/>
+`openssl x509 -req -days 365 -in server.csr -CA ca.crt -CAkey ca.key -set_serial 01 -out server.crt -sha256`
+
+
+## Client (if necessary)
+`openssl genrsa -out client.key 4096`<br/>
+`openssl req -new -key client.key -out client.csr  -subj "/C=FI/ST=Uusima/L=Helsinki/O=ExampleClientOrganisation/CN=www.localorg.com"`<br/>
+Signing client certificate with ca.key<br/>
+`openssl x509 -req -days 365 -in client.csr -CA ca.crt -CAkey ca.key -set_serial 02 -out client.crt -sha256`<br/>
+
+# Verifying (optional)
+Varify server and client certifiactes<br/>
+`openssl verify -purpose sslserver -CAfile ca.crt server.crt`<br/>
+`openssl verify -purpose sslclient -CAfile ca.crt client.crt`<br/>
