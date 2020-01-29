@@ -3,3 +3,4 @@ proxy_tls
 signature_certs
 client_proxy_tls
 .vscode
+.DS_Store
