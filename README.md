@@ -26,8 +26,8 @@ docker run -d \
 
 ## Check available endpoints
 Container endpoints documentation is available at `/docs` or `/redoc`:<br/>
-`http://localhost:<host_port>/docs`<br/>
-`http://localhost:<host_port>/redoc`
+`http(s)://localhost:<host_port>/docs`<br/>
+`http(s)://localhost:<host_port>/redoc`
 
 
 # Certificates
