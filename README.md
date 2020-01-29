@@ -52,6 +52,6 @@ Signing client certificate with ca.key<br/>
 `openssl x509 -req -days 365 -in client.csr -CA ca.crt -CAkey ca.key -set_serial 02 -out client.crt -sha256`<br/>
 
 # Verifying (optional)
-Varify server and client certifiactes<br/>
+Verify server and client certifiactes<br/>
 `openssl verify -purpose sslserver -CAfile ca.crt server.crt`<br/>
 `openssl verify -purpose sslclient -CAfile ca.crt client.crt`<br/>
