@@ -16,8 +16,8 @@ PROXY_CLIENT_KEY_PATH = 'client_proxy_tls/client.key'
 PROXY_CA_CERT_PATH = 'client_proxy_tls/ca.crt'
 
 
-# All data in the requests should be passed as json, where all payload should be inside `data` field:
-# {'data': 'some_important_information'}
+# All data in the requests should be passed as json, where all payload should be inside `params` field:
+# {'params': 'some_important_information'}
 
 def sign() -> str:
     res = requests.post(
