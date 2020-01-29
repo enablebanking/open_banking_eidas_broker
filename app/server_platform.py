@@ -99,7 +99,7 @@ class ServerPlatform:
                 (name, value)
                 for name, value in e.headers.items()]
             return {
-                    'status': f.status,
+                    'status': e.status,
                     'response': response,
                     'headers': headers
             }
