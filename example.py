@@ -25,7 +25,7 @@ def sign() -> str:
         json={
             'params': {
                 'data': 'test',
-                'key_id': 'seal.key'
+                'key_id': 'bank_name/seal.key'
             }
         },
         cert=(PROXY_CLIENT_CERT_PATH, PROXY_CLIENT_KEY_PATH),
@@ -74,8 +74,8 @@ def make_request_eb():
         ["refreshToken", None],
         ["clientId", "some_id"],
         ["clientSecret", "some_secret"],
-        ["certPath", "assets/ca.crt"],  # not used (passed through platform istead)
-        ["keyPath", "assets/private.key"],  # not used (passed through platform istead)
+        ["certPath", "bank_name/public.crt"],
+        ["keyPath", "bank_name/private.key"],
         ["signKeyPath", "signature.key"],
         ["signPubKeySerial", "123"],
         ["signFingerprint", "322123123"],
@@ -84,7 +84,7 @@ def make_request_eb():
         ["paymentAuthState", "test"]
     ])
     proxy_platform = ProxyPlatform(
-        'https://localhost',
+        HOST,
         PROXY_CLIENT_CERT_PATH,
         PROXY_CLIENT_KEY_PATH,
         PROXY_CA_CERT_PATH

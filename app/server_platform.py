@@ -35,25 +35,29 @@ class SafeString(str):
 
 # For the future: extend this class from enablebanking's platform
 class ServerPlatform:
-    def __init__(self, cert_path, key_path):
-        """
-        Arguments:
-            cert_path -- Path to a public certificate
-            key_path -- Path to a private key
-        """
-        self.cert_path = cert_path
-        self.key_path = key_path
+    PATH_PREFIX = '/app/open_banking_certs/'
 
-    def get_ssl_context(self):
-        if os.path.isfile(self.cert_path) and os.path.isfile(self.key_path):
+    def update_tls_paths(self, tls):
+        fields = ['cert_path', 'key_path', 'ca_cert_path']
+        for field in fields:
+            if hasattr(tls, field):
+                field_value = getattr(tls, field)
+                if field_value and not field_value.startswith(self.PATH_PREFIX):
+                    setattr(tls, field, self.PATH_PREFIX + field_value)
+
+    def get_ssl_context(self, tls):
+        self.update_tls_paths(tls)
+        if tls and os.path.isfile(tls.cert_path) and os.path.isfile(tls.key_path):
             ssl_context = ssl.create_default_context()
             ssl_context.check_hostname = False
             ssl_context.verify_mode = ssl.CERT_NONE
             ssl_context.load_cert_chain(
-                self.cert_path,
-                self.key_path,
-                # lambda: request.tls.keyPassword
+                tls.cert_path,
+                tls.key_path,
+                lambda: tls.key_password
             )
+            if tls.ca_cert_path and os.path.isfile(tls.ca_cert_path):
+                ssl_context.load_verify_locations(tls.ca_cert_path)
         else:
             ssl_context = ssl._create_unverified_context()
         return ssl_context
@@ -69,7 +73,7 @@ class ServerPlatform:
             "Request(%r, %r, headers=%r, method=%r",
             url, data, headers, request.method)
         req = Request(url, data=data, headers=headers, method=request.method)
-        ssl_context = self.get_ssl_context()
+        ssl_context = self.get_ssl_context(request.tls)
         try:
             with urlopen(req, context=ssl_context) as f:
                 response_info = f.info()
@@ -177,9 +181,8 @@ class ServerPlatform:
         Returns:
             String -- Base64 encoded signed with a private key string
         """
-        PATH_PREFIX = '/app/signature_certs/'
-        if not key_path.startswith(PATH_PREFIX):
-            key_path = PATH_PREFIX + key_path
+        if not key_path.startswith(self.PATH_PREFIX):
+            key_path = self.PATH_PREFIX + key_path
         if hash_algorithm is None:
             hash_algorithm = 'SHA256'
         hash_algorithm = hash_algorithm.upper()

@@ -1,15 +1,22 @@
 # Building an image and starting a container
 In order to build an image you need to:
 1. Have docker installed
-2. Put you certificates (if your API requires those) into `open_banking_tls/` directory under following names:
-    - `public.crt`  # tls public certificate
-    - `private.key`  # tls private key
+2. Put you QWAC (mTLS) and QSeal (signature) certificates (if your API requires those) into `open_banking_certs/` directory.<br/>
+You can put certificates in an arbitrary order/names. Later you will have to provide paths to those certificates.<br/>
+It is proposed to put certificates in the following order:
+- `Bank1`
+    - `server.key`
+    - `server.crt`
+    - `signature.key`
+- `Bank2`
+    - `server.key`
+    - `server.crt`
+    - `signature.key`
 3. Put proxy certificates into `proxy_tls/` directory under following names:
     - `server.key`  # private server (proxy) certificate
     - `server.crt`  # public server (proxy) key
     - `ca.crt`  # public certificate authority certificate
 If you want to generate self-signed certificates, see instructions below
-5. Put signature certificates into `signature_certs/` directory. You can put certificates under this dirrectory in an arbitrary order. Later these certificates are going to be accessed by path (A.K.A. `key_id`) from the request.
 4. Go to the directory with `Dockerfile`
 5. Run `docker build -t <image_name> .` (probably you need to prepend this command with `sudo`)<br/>
 6. Start built image:<br/>
@@ -17,8 +24,7 @@ If you want to generate self-signed certificates, see instructions below
 docker run -d \
     --name <container_name> \
     -p 443:80 \
-    --mount type=bind,source="$(pwd)"/open_banking_tls/,target=/app/open_banking_tls/ \
-    --mount type=bind,source="$(pwd)"/signature_certs/,target=/app/signature_certs/ \
+    --mount type=bind,source="$(pwd)"/open_banking_certs/,target=/app/open_banking_certs/ \
     <image_name>
 ```
 

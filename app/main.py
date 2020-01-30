@@ -9,9 +9,7 @@ from server_platform import ServerPlatform
 
 app = FastAPI()
 # We could pass these files' paths from environment variables
-PUBLIC_CERT_PATH = 'open_banking_tls/public.crt'
-PRIVATE_KEY_PATH = 'open_banking_tls/private.key'
-platform = ServerPlatform(PUBLIC_CERT_PATH, PRIVATE_KEY_PATH)
+platform = ServerPlatform()
 
 
 class BaseRequest(BaseModel):
@@ -25,13 +23,20 @@ class SignParams(BaseModel):
 class SignRequest(BaseRequest):
     params: SignParams
 
+class TLS(BaseModel):
+    cert_path: str
+    key_path: str
+    ca_cert_path: Optional[str] = None
+    key_password: Optional[str] = None
+
 class MakeRequestParams(BaseModel):
     method: str
     origin: str
     path: str
     query: List[Tuple[str, str]] = []
     body: str = ''
-    headers: List[Tuple[str, str]]
+    headers: List[Tuple[str, str]] = []
+    tls: TLS = None
 
 class MakeRequestData(BaseModel):
     request: MakeRequestParams
@@ -50,6 +55,7 @@ class ApiRequest:
         self.headers = (headers if ((headers is not None)) else [])
         self.query = (query if ((query is not None)) else [])
         self.body = body
+        self.tls = tls
 
 def get_params(request):
     params = getattr(request, 'params', None)
@@ -87,9 +93,10 @@ async def make_request(request: MakeRequestRequest):
         make_request_params.method,
         make_request_params.origin,
         make_request_params.path,
-        headers,
-        query,
-        make_request_params.body)
+        headers=headers,
+        query=query,
+        body=make_request_params.body,
+        tls=make_request_params.tls)
     return {
         'result': platform.makeRequest(api_request)
     }
