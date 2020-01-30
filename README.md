@@ -1,3 +1,6 @@
+| WARNING: This project is not production-ready and intended only for testing purposes! |
+| --- |
+
 # Building an image and starting a container
 In order to build an image you need to:
 1. Have docker installed

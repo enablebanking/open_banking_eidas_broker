@@ -21,6 +21,8 @@ async def base_exception_handler(request: Request, exc: Exception):
         content={
             'code': error_code,
             'message': f'Internal server error',
+            # Note that it is not safe to display internal error for end user
+            # This is done intentionally
             'data': str(exc)
         }
     )
