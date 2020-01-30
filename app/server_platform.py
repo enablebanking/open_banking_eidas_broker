@@ -46,18 +46,24 @@ class ServerPlatform:
                     setattr(tls, field, self.PATH_PREFIX + field_value)
 
     def get_ssl_context(self, tls):
-        self.update_tls_paths(tls)
-        if tls and os.path.isfile(tls.cert_path) and os.path.isfile(tls.key_path):
+        if tls:
+            self.update_tls_paths(tls)
             ssl_context = ssl.create_default_context()
-            ssl_context.check_hostname = False
-            ssl_context.verify_mode = ssl.CERT_NONE
             ssl_context.load_cert_chain(
                 tls.cert_path,
                 tls.key_path,
                 lambda: tls.key_password
             )
-            if tls.ca_cert_path and os.path.isfile(tls.ca_cert_path):
+            if tls.ca_cert_path:
                 ssl_context.load_verify_locations(tls.ca_cert_path)
+
+            if os.getenv('verify_cert', False):
+                if not tls.ca_cert_path:
+                    raise Exception('ca_cert_path must be specified when verify_cert is set')
+                ssl_context.verify_flags = ssl.CERT_REQUIRED
+            else:
+                ssl_context.check_hostname = False
+                ssl_context.verify_mode = ssl.CERT_NONE
         else:
             ssl_context = ssl._create_unverified_context()
         return ssl_context

@@ -8,6 +8,7 @@ It is proposed to put certificates in the following order:
     - `server.key`
     - `server.crt`
     - `signature.key`
+    - `ca_cert.crt` (optional)
 - `Bank2`
     - `server.key`
     - `server.crt`
@@ -27,6 +28,8 @@ docker run -d \
     --mount type=bind,source="$(pwd)"/open_banking_certs/,target=/app/open_banking_certs/ \
     <image_name>
 ```
+
+You can also specify `verify_cert` environment variable using `-e` flag if you want you requests to banks to be verified against QWAC certificate chain (if it is provided).
 
 5. Go to `http(s)://localhost:<host_port>` to verify that everything works (you will need to provide proxy certificates with you requirest in order to see the page)
 

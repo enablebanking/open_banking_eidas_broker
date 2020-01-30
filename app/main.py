@@ -2,7 +2,9 @@ from collections import namedtuple
 import os
 from typing import Dict, List, Tuple, Union, Optional
 
-from fastapi import FastAPI, HTTPException
+from starlette.requests import Request
+from starlette.responses import JSONResponse
+from fastapi import FastAPI
 from pydantic import BaseModel
 
 from server_platform import ServerPlatform
@@ -11,6 +13,17 @@ app = FastAPI()
 # We could pass these files' paths from environment variables
 platform = ServerPlatform()
 
+@app.exception_handler(Exception)
+async def base_exception_handler(request: Request, exc: Exception):
+    error_code = 500
+    return JSONResponse(
+        status_code=error_code,
+        content={
+            'code': error_code,
+            'message': f'Internal server error',
+            'data': str(exc)
+        }
+    )
 
 class BaseRequest(BaseModel):
     params: BaseModel
@@ -57,12 +70,6 @@ class ApiRequest:
         self.body = body
         self.tls = tls
 
-def get_params(request):
-    params = getattr(request, 'params', None)
-    if not params:
-        raise HTTPException(status_code=422, detail='Wrong data format. All request data must be inside `params` field')
-    return params
-
 
 # this endpoint left intentionally for some setup/testing
 @app.get("/")
@@ -71,17 +78,15 @@ async def read_root():
 
 @app.post("/sign")
 async def sign(request: SignRequest):
-    sign_params: SignParams = get_params(request)
+    sign_params: SignParams = request.params
     return {
         'result': platform.signWithKey(sign_params.data, sign_params.key_id, sign_params.hash_algorithm)
     }
 
 @app.post("/makeRequest")
 async def make_request(request: MakeRequestRequest):
-    make_request_data = get_params(request)
+    make_request_data = request.params
     make_request_params = getattr(make_request_data, 'request')
-    if not make_request_params:
-        raise HTTPException(status_code=422, detail='No request data. Field `request` does not exist or is empty')
     Pair = namedtuple('Pair', ['name', 'value'])
     query = None
     if make_request_params.query:
