@@ -67,3 +67,5 @@ Signing client certificate with ca.key<br/>
 Verify server and client certifiactes<br/>
 `openssl verify -purpose sslserver -CAfile ca.crt server.crt`<br/>
 `openssl verify -purpose sslclient -CAfile ca.crt client.crt`<br/>
+
+Copyright 2020 Enable Banking Oy
