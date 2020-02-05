@@ -11,9 +11,9 @@ import enablebanking
 from enablebanking.eb.proxy_platform import ProxyPlatform
 
 HOST = 'https://localhost'
-PROXY_CLIENT_CERT_PATH = 'client_proxy_tls/client.crt'
-PROXY_CLIENT_KEY_PATH = 'client_proxy_tls/client.key'
-PROXY_CA_CERT_PATH = 'client_proxy_tls/ca.crt'
+BROKER_CLIENT_CERT_PATH = 'broker_client_tls/client.crt'
+BROKER_CLIENT_KEY_PATH = 'broker_client_tls/client.key'
+BROKER_CA_CERT_PATH = 'broker_client_tls/ca.crt'
 
 
 # All data in the requests should be passed as json, where all payload should be inside `params` field:
@@ -28,8 +28,8 @@ def sign() -> str:
                 'key_id': 'bank_name/seal.key'
             }
         },
-        cert=(PROXY_CLIENT_CERT_PATH, PROXY_CLIENT_KEY_PATH),
-        verify=PROXY_CA_CERT_PATH
+        cert=(BROKER_CLIENT_CERT_PATH, BROKER_CLIENT_KEY_PATH),
+        verify=BROKER_CA_CERT_PATH
     )
     return res.json()['result']
 
@@ -52,11 +52,11 @@ def make_request_urllib() -> dict:
     )
     ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
     ssl_context.load_cert_chain(
-        PROXY_CLIENT_CERT_PATH,
-        PROXY_CLIENT_KEY_PATH
+        BROKER_CLIENT_CERT_PATH,
+        BROKER_CLIENT_KEY_PATH
     )
     ssl_context.verify_mode = ssl.CERT_REQUIRED
-    ssl_context.load_verify_locations(PROXY_CA_CERT_PATH)
+    ssl_context.load_verify_locations(BROKER_CA_CERT_PATH)
     try:
         with urlopen(req, context=ssl_context) as r:
             response_info = r.info()
@@ -85,9 +85,9 @@ def make_request_eb():
     ])
     proxy_platform = ProxyPlatform(
         HOST,
-        PROXY_CLIENT_CERT_PATH,
-        PROXY_CLIENT_KEY_PATH,
-        PROXY_CA_CERT_PATH
+        BROKER_CLIENT_CERT_PATH,
+        BROKER_CLIENT_KEY_PATH,
+        BROKER_CA_CERT_PATH
     )
     api_client = enablebanking.ApiClient('Alior', connector_settings, platform=proxy_platform)
     auth_api = enablebanking.AuthApi(api_client)

@@ -29,9 +29,9 @@ workers = web_concurrency
 bind = use_bind
 keepalive = 120
 errorlog = "-"
-certfile = "/app/proxy_tls/server.crt"
-keyfile = "/app/proxy_tls/server.key"
-ca_certs = "/app/proxy_tls/ca.crt"
+certfile = "/app/broker_tls/server.crt"
+keyfile = "/app/broker_tls/server.key"
+ca_certs = "/app/broker_tls/ca.crt"
 cert_reqs = VerifyMode.CERT_REQUIRED
 
 # For debugging and testing
