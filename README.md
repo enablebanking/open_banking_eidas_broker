@@ -12,6 +12,8 @@ The web API of the broker service consists of 2 endpoints:
 
 Access to the broker service APIs is provided over mTLS and authentication of the client is done based on the client certificate. The client certificate and the broker server certificate shall be signed using the same CA certificate.
 
+The broker service is primarily designed to be called from [enable:Banking aggregation SDK](https://enablebanking.com/docs/sdk/latest/), which provides special `BrokerPlatform` class offloading signing and mTLS funtionality to the broker. 
+
 ## Accessing ASPSP APIs through eIDAS broker
 
 The flow of the calls between client, broker service and ASPSP looks like this:
