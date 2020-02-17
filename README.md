@@ -1,32 +1,37 @@
-| WARNING: This project is not production-ready and intended only for testing purposes! |
-| --- |
+| CAUTION: This project may not suite production use and is mainly intended for testing! |
+| -------------------------------------------------------------------------------------- |
 
 # Open Banking eIDAS broker
 
-This project is intended to be used in situations where you need to test an API, which requires usage of QSeal private key and/or TLS cert/key pair, but these certificates is only accessible from a remote server.
+The broker service provides possibility to use eIDAS certificates *(in practice any X.509 certificates)* for generating signatures and sending HTTP requests over mTLS connections without need to expose private keys of the certificates with the service client.
 
-The docker image has 2 endpoints:
+The web API of the broker service consists of 2 endpoints:
 
-1. For signing received data with private QSeal certificate and returning this signature back
-2. For signing received HTTP request with TLS cert/key pair, forwarding signed request to the API, receiving a response from API and returning it back to the initiating party.
+1. `/sign` -- for signing received data with a QSeal certificate and returning this signature back;
+2. `/make-request` -- for making HTTP request over mutual TLS connection established with a QWAC certificate and returning response back.
 
-In other words, the flow looks like this:<br/>
+Access to the broker service APIs is provided over mTLS and authentication of the client is done based on the client certificate. The client certificate and the broker server certificate shall be signed using the same CA certificate.
+
+## Accessing ASPSP APIs through eIDAS broker
+
+The flow of the calls between client, broker service and ASPSP looks like this:
+
 ```
-   [Local premises]   --   [Remote cerver with certificates]   --   [API]
+   [Client premises]            --   [Broker service holding eIDAS keys]   --   [Open banking API (ASPSP)]
 
-1. Some_data          ->   Receiving and signing the data
-   Data_signature     <-   with QSeal certificate
+1. OB API request to be signed  ->   Signing the data using a QSeal
+                                     certificate named by the client
+   Request signature            <-   and returning the signature
 
-
-                           Receiving the request, signing it        API gets the request
-2. HTTP_request      ->    with TLS cert/key pair and          ->   and returns response
-                           sending it further to an API             to the remote server
-
-   Response from           Remote server just forwards the
-   an API             <-   response from an API to the         <-
-                           initiating party
+                                     Forwarding the request to an ASPSP 
+2. OB API request to be sent    ->   over mTLS established with a QWAC     ->   ASPSP gets complete API
+                                     certificate named by the client            request, verifies the
+                                                                                signature, and responses
+   Response from the ASPSP      <-   Returning the response back to the    <-   to the broker service
+                                     initiating party
 ```
 
+The client may request to use different certificates (identified by URI) and to forward arbitrary requests (to different ASPSPs).
 
 ## Building an image and starting a container
 
@@ -90,7 +95,7 @@ Signing server certificate with ca.key. It is mandatory not to use md5 message d
 `openssl x509 -req -days 365 -in server.csr -CA ca.crt -CAkey ca.key -set_serial 01 -out server.crt -sha256`
 
 
-### Client (if necessary)
+### Client
 
 `openssl genrsa -out client.key 4096`<br/>
 `openssl req -new -key client.key -out client.csr  -subj "/C=FI/ST=Uusima/L=Helsinki/O=ExampleClientOrganisation/CN=www.localorg.com"`<br/>
