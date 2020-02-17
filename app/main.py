@@ -1,17 +1,19 @@
-from collections import namedtuple
 import os
+from collections import namedtuple
 from typing import Dict, List, Tuple, Union, Optional
 
-from starlette.requests import Request
-from starlette.responses import JSONResponse
 from fastapi import FastAPI
 from pydantic import BaseModel
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 
 from server_platform import ServerPlatform
+
 
 app = FastAPI()
 # We could pass these files' paths from environment variables
 platform = ServerPlatform()
+
 
 @app.exception_handler(Exception)
 async def base_exception_handler(request: Request, exc: Exception):
@@ -27,22 +29,27 @@ async def base_exception_handler(request: Request, exc: Exception):
         }
     )
 
+
 class BaseRequest(BaseModel):
     params: BaseModel
+
 
 class SignParams(BaseModel):
     data: str
     key_id: str
     hash_algorithm: Optional[str] = None
 
+
 class SignRequest(BaseRequest):
     params: SignParams
+
 
 class TLS(BaseModel):
     cert_path: str
     key_path: str
     ca_cert_path: Optional[str] = None
     key_password: Optional[str] = None
+
 
 class MakeRequestParams(BaseModel):
     method: str
@@ -53,8 +60,10 @@ class MakeRequestParams(BaseModel):
     headers: List[Tuple[str, str]] = []
     tls: TLS = None
 
+
 class MakeRequestData(BaseModel):
     request: MakeRequestParams
+
 
 class MakeRequestRequest(BaseRequest):
     params: MakeRequestData
@@ -73,10 +82,10 @@ class ApiRequest:
         self.tls = tls
 
 
-# this endpoint left intentionally for some setup/testing
 @app.get("/")
 async def read_root():
     return {"Hello": "World"}
+
 
 @app.post("/sign")
 async def sign(request: SignRequest):
@@ -85,7 +94,8 @@ async def sign(request: SignRequest):
         'result': platform.signWithKey(sign_params.data, sign_params.key_id, sign_params.hash_algorithm)
     }
 
-@app.post("/makeRequest")
+
+@app.post("/make-request")
 async def make_request(request: MakeRequestRequest):
     make_request_data = request.params
     make_request_params = getattr(make_request_data, 'request')
