@@ -84,7 +84,7 @@ class ApiRequest:
 
 @app.get("/")
 async def read_root():
-    return {"Hello": "World"}
+    return {"result": "eIDAS broker"}
 
 
 @app.post("/sign")
