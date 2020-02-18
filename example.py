@@ -35,7 +35,7 @@ def sign() -> str:
 
 def make_request_urllib() -> dict:
     req = Request(
-        HOST + '/makeRequest',
+        HOST + '/make-request',
         method='POST',
         data=json.dumps({
             'params': {
