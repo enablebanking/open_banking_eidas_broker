@@ -110,7 +110,7 @@ client site).
 openssl genrsa -out client.key 4096
 ```
 
-And client CSR is generated the same way how it's not for the server.
+And client CSR is generated the same way how it's done for the server.
 
 ```bash
 openssl req -new -key client.key -out client.csr \
