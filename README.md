@@ -146,17 +146,11 @@ In order to build an image you need to:
 1. Have docker installed
 2. Put you QWAC (mTLS) and QSeal (signature) certificates (if your API requires those) into `open_banking_certs/` directory.<br/>
 You can put certificates in an arbitrary order/names. Later you will have to provide paths to those certificates.<br/>
-It is proposed to put certificates in the following order:
-- `Bank1`
-    - `server.key`
-    - `server.crt`
-    - `signature.key`
-    - `ca_cert.crt` (optional)
-- `Bank2`
-    - `server.key`
-    - `server.crt`
-    - `signature.key`
-3. Put broker certificates into `broker_tls/` directory under following names:
+    - `qwac.key`  # QWAC private key. Needed for establishing mTLS
+    - `qwac.crt`  # QWAC public certificate. Needed for establishing mTLS
+    - `qwac_chain.crt` (optional)  # QWAC certificate chain. Some banks require it
+    - `qseal.key`  # QSeal private key. Used for creating signatures
+3. Put broker certificates you generated earlier into `broker_tls/` directory under following names:
     - `server.key`  # private server (broker) certificate
     - `server.crt`  # public server (broker) key
     - `ca.crt`  # public certificate authority certificate
@@ -175,7 +169,7 @@ docker run -d \
 
 You can also specify `verify_cert` environment variable using `-e` flag if you want you requests to banks to be verified against QWAC certificate chain (if it is provided).
 
-7. Go to `http(s)://localhost:<host_port>` to verify that everything works (you will need to provide broker certificates with you requirest in order to see the page)
+7. Go to `http(s)://localhost:<host_port>` to verify that everything works (you will need to provide broker certificates with you request in order to see the page)
 
 ## Check available endpoints
 Container endpoints documentation is available at `/docs` or `/redoc`:<br/>
@@ -183,4 +177,4 @@ Container endpoints documentation is available at `/docs` or `/redoc`:<br/>
 `http(s)://localhost:<host_port>/redoc`
 
 
-Copyright 2020 Enable Banking Oy
+Copyright 2021 Enable Banking Oy
