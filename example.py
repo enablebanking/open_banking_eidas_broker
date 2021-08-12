@@ -1,5 +1,5 @@
 import ssl
-from typing import Dict
+from typing import Dict, Any
 import json
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError
@@ -33,10 +33,13 @@ def sign() -> str:
     )
     return res.json()['result']
 
-def make_request_urllib() -> dict:
+def make_request_urllib() -> Dict[Any, Any]:
     req = Request(
         HOST + '/make-request',
         method='POST',
+        headers={
+            "Content-Type": "application/json"
+        },
         data=json.dumps({
             'params': {
                 'request': {
