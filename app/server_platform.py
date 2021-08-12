@@ -3,13 +3,10 @@ import gzip
 import logging
 import os
 import ssl
-import uuid
-from collections import namedtuple
-from datetime import datetime
 from typing import Union, Optional
 from urllib.error import HTTPError
 from urllib.parse import urlencode
-from urllib.request import Request, urlopen
+from urllib.request import Request, urlopen, build_opener, install_opener, HTTPRedirectHandler, HTTPSHandler
 
 from cryptography.utils import int_to_bytes
 from cryptography.hazmat.backends import default_backend
@@ -31,6 +28,13 @@ class SafeString(str):
 
     def capitalize(self):
         return self
+
+
+class NoRedirectHandler(HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        logging.error("Got redirect")
+        # raise HTTPError(req.full_url, code, msg, headers, fp)
+        return None
 
 
 # For the future: extend this class from enablebanking's platform
@@ -68,7 +72,7 @@ class ServerPlatform:
             ssl_context = ssl._create_unverified_context()
         return ssl_context
 
-    def makeRequest(self, request):
+    def makeRequest(self, request, follow_redirects: Optional[bool] = True):
         url = request.origin + request.path
         query = urlencode(_params_to_pairs(request.query))
         data = request.body.encode()
@@ -76,12 +80,22 @@ class ServerPlatform:
         if query:
             url += '?' + query
         logging.debug(
-            "Request(%r, %r, headers=%r, method=%r",
+            "Request(%r, %r, headers=%r, method=%r)",
             url, data, headers, request.method)
         req = Request(url, data=data, headers=headers, method=request.method)
         ssl_context = self.get_ssl_context(request.tls)
+        https_opener = HTTPSHandler(
+            context=ssl_context
+        )  # for some reason urllib cant install your custom redirect opener if you have ssl context
+        if follow_redirects:
+            opener = build_opener(https_opener)
+        else:
+            opener = build_opener(
+                https_opener, NoRedirectHandler
+            )  # so we just create opener with both https and no redirect handler
+        install_opener(opener)
         try:
-            with urlopen(req, context=ssl_context) as f:
+            with urlopen(req) as f:
                 response_info = f.info()
                 logging.info("%r", response_info.items())
                 encoding = response_info.get('content-encoding', None)

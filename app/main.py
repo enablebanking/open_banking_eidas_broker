@@ -1,6 +1,5 @@
-import os
 from collections import namedtuple
-from typing import Dict, List, Tuple, Union, Optional
+from typing import List, Tuple, Optional
 
 from fastapi import FastAPI
 from pydantic import BaseModel
@@ -63,6 +62,7 @@ class MakeRequestParams(BaseModel):
 
 class MakeRequestData(BaseModel):
     request: MakeRequestParams
+    follow_redirects: Optional[bool] = True
 
 
 class MakeRequestRequest(BaseRequest):
@@ -95,10 +95,10 @@ async def sign(request: SignRequest):
     }
 
 
-@app.post("/make-request")
+@app.post("/makeRequest")
 async def make_request(request: MakeRequestRequest):
     make_request_data = request.params
-    make_request_params = getattr(make_request_data, 'request')
+    make_request_params = make_request_data.request
     Pair = namedtuple('Pair', ['name', 'value'])
     query = None
     if make_request_params.query:
@@ -115,5 +115,5 @@ async def make_request(request: MakeRequestRequest):
         body=make_request_params.body,
         tls=make_request_params.tls)
     return {
-        'result': platform.makeRequest(api_request)
+        'result': platform.makeRequest(api_request, make_request_data.follow_redirects)
     }
