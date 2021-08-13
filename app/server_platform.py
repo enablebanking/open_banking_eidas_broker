@@ -6,15 +6,21 @@ import ssl
 from typing import Union, Optional
 from urllib.error import HTTPError
 from urllib.parse import urlencode
-from urllib.request import Request, urlopen, build_opener, install_opener, HTTPRedirectHandler, HTTPSHandler
+from urllib.request import (
+    Request,
+    urlopen,
+    build_opener,
+    install_opener,
+    HTTPRedirectHandler,
+    HTTPSHandler,
+)
 
 from cryptography.utils import int_to_bytes
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec, padding
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
-from cryptography.hazmat.backends.openssl.rsa import _RSAPrivateKey
-from cryptography.hazmat.backends.openssl.ec import _EllipticCurvePrivateKey
 
 
 def _params_to_pairs(params):
@@ -39,10 +45,10 @@ class NoRedirectHandler(HTTPRedirectHandler):
 
 # For the future: extend this class from enablebanking's platform
 class ServerPlatform:
-    PATH_PREFIX = '/app/open_banking_certs/'
+    PATH_PREFIX = "/app/open_banking_certs/"
 
     def update_tls_paths(self, tls):
-        fields = ['cert_path', 'key_path', 'ca_cert_path']
+        fields = ["cert_path", "key_path", "ca_cert_path"]
         for field in fields:
             if hasattr(tls, field):
                 field_value = getattr(tls, field)
@@ -54,16 +60,16 @@ class ServerPlatform:
             self.update_tls_paths(tls)
             ssl_context = ssl.create_default_context()
             ssl_context.load_cert_chain(
-                tls.cert_path,
-                tls.key_path,
-                lambda: tls.key_password
+                tls.cert_path, tls.key_path, lambda: tls.key_password
             )
             if tls.ca_cert_path:
                 ssl_context.load_verify_locations(tls.ca_cert_path)
 
-            if os.getenv('verify_cert', False):
+            if os.getenv("verify_cert", False):
                 if not tls.ca_cert_path:
-                    raise Exception('ca_cert_path must be specified when verify_cert is set')
+                    raise Exception(
+                        "ca_cert_path must be specified when verify_cert is set"
+                    )
                 ssl_context.verify_flags = ssl.CERT_REQUIRED
             else:
                 ssl_context.check_hostname = False
@@ -78,10 +84,10 @@ class ServerPlatform:
         data = request.body.encode()
         headers = dict((SafeString(a), b) for a, b in _params_to_pairs(request.headers))
         if query:
-            url += '?' + query
+            url += "?" + query
         logging.debug(
-            "Request(%r, %r, headers=%r, method=%r)",
-            url, data, headers, request.method)
+            "Request(%r, %r, headers=%r, method=%r)", url, data, headers, request.method
+        )
         req = Request(url, data=data, headers=headers, method=request.method)
         ssl_context = self.get_ssl_context(request.tls)
         https_opener = HTTPSHandler(
@@ -98,35 +104,23 @@ class ServerPlatform:
             with urlopen(req) as f:
                 response_info = f.info()
                 logging.info("%r", response_info.items())
-                encoding = response_info.get('content-encoding', None)
-                if encoding and encoding.lower() == 'gzip':
-                    response = gzip.decompress(f.read()).decode('utf-8')
+                encoding = response_info.get("content-encoding", None)
+                if encoding and encoding.lower() == "gzip":
+                    response = gzip.decompress(f.read()).decode("utf-8")
                 else:
-                    response = f.read().decode('utf-8')
+                    response = f.read().decode("utf-8")
                 logging.debug("%d %r", f.status, response)
-                headers = [
-                    (name, value)
-                    for name, value in response_info.items()]
-                return {
-                    'status': f.status,
-                    'response': response,
-                    'headers': headers
-                }
+                headers = [(name, value) for name, value in response_info.items()]
+                return {"status": f.status, "response": response, "headers": headers}
         except HTTPError as e:
-            encoding = e.headers['content-encoding']
-            if encoding and encoding.lower() == 'gzip':
-                response = gzip.decompress(e.fp.read()).decode('utf-8')
+            encoding = e.headers["content-encoding"]
+            if encoding and encoding.lower() == "gzip":
+                response = gzip.decompress(e.fp.read()).decode("utf-8")
             else:
-                response = e.fp.read().decode('utf-8')
+                response = e.fp.read().decode("utf-8")
             logging.error("%d %r", e.status, response)
-            headers = [
-                (name, value)
-                for name, value in e.headers.items()]
-            return {
-                    'status': e.status,
-                    'response': response,
-                    'headers': headers
-            }
+            headers = [(name, value) for name, value in e.headers.items()]
+            return {"status": e.status, "response": response, "headers": headers}
 
     @staticmethod
     def _force_bytes(value):
@@ -142,11 +136,11 @@ class ServerPlatform:
             Bytes -- Value converted to bytes]
         """
         if isinstance(value, str):
-            return value.encode('utf-8')
+            return value.encode("utf-8")
         elif isinstance(value, bytes):
             return value
         else:
-            raise TypeError('Expected a string value')
+            raise TypeError("Expected a string value")
 
     def _prepare_key(self, key, password=None):
         """Create a key out of .pem key
@@ -172,24 +166,30 @@ class ServerPlatform:
             except ValueError:
                 key = backend.load_pem_public_key(key)
         else:
-            raise TypeError('Expecting a PEM-formatted key.')
+            raise TypeError("Expecting a PEM-formatted key.")
 
         return key
 
     @staticmethod
     def _decode_signature(signature, hash_algorithm):
-        hash_algorithms_map = {
-            'SHA256': 256
-        }
+        hash_algorithms_map = {"SHA256": 256}
         try:
             num_bits = hash_algorithms_map[hash_algorithm]
         except KeyError:
-            raise ValueError(f'Wrong hash algorithm: {hash_algorithm}. Allowed: {list(hash_algorithms_map.keys())}')
+            raise ValueError(
+                f"Wrong hash algorithm: {hash_algorithm}. Allowed: {list(hash_algorithms_map.keys())}"
+            )
         num_bytes = (num_bits + 7) // 8
         r, s = decode_dss_signature(signature)
         return int_to_bytes(r, num_bytes) + int_to_bytes(s, num_bytes)
 
-    def signWithKey(self, data: Union[str, bytes], key_path: str, hash_algorithm: Optional[str] = None) -> str:
+    def signWithKey(
+        self,
+        data: Union[str, bytes],
+        key_path: str,
+        hash_algorithm: Optional[str] = None,
+        crypto_algorithm: Optional[str] = None,
+    ) -> str:
         """Sign passed data with private key
 
         Arguments:
@@ -204,22 +204,31 @@ class ServerPlatform:
         if not key_path.startswith(self.PATH_PREFIX):
             key_path = self.PATH_PREFIX + key_path
         if hash_algorithm is None:
-            hash_algorithm = 'SHA256'
+            hash_algorithm = "SHA256"
         hash_algorithm = hash_algorithm.upper()
-        hash_algorithms_map = {
-            'SHA256': hashes.SHA256
-        }
+        hash_algorithms_map = {"SHA256": hashes.SHA256}
         try:
-            hash_obj = hash_algorithms_map[hash_algorithm]()
+            hash_obj = hash_algorithms_map[hash_algorithm]
         except AttributeError:
-            raise AttributeError(f'Wrong hash algorithm: {hash_algorithm}. Allowed: {list(hash_algorithms_map.keys())}')
+            raise AttributeError(
+                f"Wrong hash algorithm: {hash_algorithm}. Allowed: {list(hash_algorithms_map.keys())}"
+            )
 
         data = self._force_bytes(data)
-        key = self._prepare_key(open(key_path, 'rb').read())
-        signature = ''
-        if isinstance(key, _RSAPrivateKey):
-            signature = key.sign(data, padding.PKCS1v15(), hash_obj)
-        elif isinstance(key, _EllipticCurvePrivateKey):
-            signature = key.sign(data, ec.ECDSA(hash_obj))
+        key = self._prepare_key(open(key_path, "rb").read())
+        signature = b""
+        if isinstance(key, RSAPrivateKey):
+            if crypto_algorithm and crypto_algorithm == "PS":
+                signature = key.sign(
+                    data,
+                    padding.PSS(
+                        mgf=padding.MGF1(hash_obj()), salt_length=hash_obj.digest_size
+                    ),
+                    hash_obj(),
+                )
+            else:
+                signature = key.sign(data, padding.PKCS1v15(), hash_obj())
+        elif isinstance(key, ec.EllipticCurvePrivateKey):
+            signature = key.sign(data, ec.ECDSA(hash_obj()))
             signature = self._decode_signature(signature, hash_algorithm)
-        return base64.b64encode(signature).decode('utf8')
+        return base64.b64encode(signature).decode("utf8")

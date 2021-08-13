@@ -20,12 +20,12 @@ async def base_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=error_code,
         content={
-            'code': error_code,
-            'message': f'Internal server error',
+            "code": error_code,
+            "message": f"Internal server error",
             # Note that it is not safe to display internal error for end user
             # This is done intentionally
-            'data': str(exc)
-        }
+            "data": str(exc),
+        },
     )
 
 
@@ -37,6 +37,7 @@ class SignParams(BaseModel):
     data: str
     key_id: str
     hash_algorithm: Optional[str] = None
+    crypto_algorithm: Optional[str] = None
 
 
 class SignRequest(BaseRequest):
@@ -55,7 +56,7 @@ class MakeRequestParams(BaseModel):
     origin: str
     path: str
     query: List[Tuple[str, str]] = []
-    body: str = ''
+    body: str = ""
     headers: List[Tuple[str, str]] = []
     tls: TLS = None
 
@@ -70,14 +71,16 @@ class MakeRequestRequest(BaseRequest):
 
 
 class ApiRequest:
-    def __init__(self, method, origin, path, headers=None, query=None, body=None, tls=None):
-        if (body is None):
+    def __init__(
+        self, method, origin, path, headers=None, query=None, body=None, tls=None
+    ):
+        if body is None:
             body = ""
         self.method = method
         self.origin = origin
         self.path = path
-        self.headers = (headers if ((headers is not None)) else [])
-        self.query = (query if ((query is not None)) else [])
+        self.headers = headers if ((headers is not None)) else []
+        self.query = query if ((query is not None)) else []
         self.body = body
         self.tls = tls
 
@@ -91,7 +94,12 @@ async def read_root():
 async def sign(request: SignRequest):
     sign_params: SignParams = request.params
     return {
-        'result': platform.signWithKey(sign_params.data, sign_params.key_id, sign_params.hash_algorithm)
+        "result": platform.signWithKey(
+            sign_params.data,
+            sign_params.key_id,
+            hash_algorithm=sign_params.hash_algorithm,
+            crypto_algorithm=sign_params.crypto_algorithm,
+        )
     }
 
 
@@ -99,7 +107,7 @@ async def sign(request: SignRequest):
 async def make_request(request: MakeRequestRequest):
     make_request_data = request.params
     make_request_params = make_request_data.request
-    Pair = namedtuple('Pair', ['name', 'value'])
+    Pair = namedtuple("Pair", ["name", "value"])
     query = None
     if make_request_params.query:
         query = [Pair(name, value) for name, value in make_request_params.query]
@@ -113,7 +121,8 @@ async def make_request(request: MakeRequestRequest):
         headers=headers,
         query=query,
         body=make_request_params.body,
-        tls=make_request_params.tls)
+        tls=make_request_params.tls,
+    )
     return {
-        'result': platform.makeRequest(api_request, make_request_data.follow_redirects)
+        "result": platform.makeRequest(api_request, make_request_data.follow_redirects)
     }
