@@ -11,7 +11,7 @@ The web API of the broker service consists of 2 endpoints:
 
 1. `/sign` -- for signing received data with a QSeal certificate and returning this
    signature back;
-2. `/make-request` -- for making HTTP request over mutual TLS connection established with
+2. `/makeRequest` -- for making HTTP request over mutual TLS connection established with
    a QWAC certificate and returning response back.
 
 Access to the broker service APIs is provided over mTLS and authentication of the client is
@@ -146,6 +146,7 @@ In order to build an image you need to:
 1. Have docker installed
 2. Put you QWAC (mTLS) and QSeal (signature) certificates (if your API requires those) into `open_banking_certs/` directory.<br/>
 You can put certificates in an arbitrary order/names. Later you will have to provide paths to those certificates.<br/>
+All certificates must be in the PEM format.</br>
     - `qwac.key`  # QWAC private key. Needed for establishing mTLS
     - `qwac.crt`  # QWAC public certificate. Needed for establishing mTLS
     - `qwac_chain.crt` (optional)  # QWAC certificate chain. Some banks require it
