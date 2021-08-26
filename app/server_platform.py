@@ -46,6 +46,7 @@ class NoRedirectHandler(HTTPRedirectHandler):
 # For the future: extend this class from enablebanking's platform
 class ServerPlatform:
     PATH_PREFIX = "/app/open_banking_certs/"
+    CERTIFICATE_PREFIX = "-----BEGIN CERTIFICATE-----"
 
     def update_tls_paths(self, tls):
         fields = ["cert_path", "key_path", "ca_cert_path"]
@@ -53,7 +54,7 @@ class ServerPlatform:
             if hasattr(tls, field):
                 field_value = getattr(tls, field)
                 if field_value and not field_value.startswith(self.PATH_PREFIX):
-                    setattr(tls, field, self.PATH_PREFIX + field_value)
+                    setattr(tls, field, os.path.join(self.PATH_PREFIX, field_value))
 
     def get_ssl_context(self, tls):
         if tls:
@@ -202,7 +203,7 @@ class ServerPlatform:
             String -- Base64 encoded signed with a private key string
         """
         if not key_path.startswith(self.PATH_PREFIX):
-            key_path = self.PATH_PREFIX + key_path
+            key_path = os.path.join(self.PATH_PREFIX, key_path)
         if hash_algorithm is None:
             hash_algorithm = "SHA256"
         hash_algorithm = hash_algorithm.upper()
@@ -232,3 +233,22 @@ class ServerPlatform:
             signature = key.sign(data, ec.ECDSA(hash_obj()))
             signature = self._decode_signature(signature, hash_algorithm)
         return base64.b64encode(signature).decode("utf8")
+
+    def loadPEM(self, cert_path: str) -> str:
+        """
+        Loads PEM certificate data
+        Be careful and try to avoid exposing private certificate data using this method
+        """
+        # trying to limit paths to point only to the PATH_PREFIX directory
+        # need to be careful with paths containing ".."
+        cert_path = os.path.normpath(cert_path)
+        if not cert_path.startswith(self.PATH_PREFIX):
+            cert_path = os.path.join(self.PATH_PREFIX, cert_path)
+
+        try:
+            data = open(cert_path, "r").read()
+        except FileNotFoundError:
+            raise ValueError("File not found")
+        if not data.startswith(self.CERTIFICATE_PREFIX):
+            raise ValueError("File not found")
+        return data
