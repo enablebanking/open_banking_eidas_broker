@@ -1,5 +1,4 @@
 from collections import namedtuple
-from pathlib import Path
 from typing import List, Tuple, Optional
 
 from fastapi import FastAPI
@@ -59,7 +58,7 @@ class MakeRequestParams(BaseModel):
     query: List[Tuple[str, str]] = []
     body: str = ""
     headers: List[Tuple[str, str]] = []
-    tls: Optional[TLS] = None
+    tls: TLS = None
 
 
 class MakeRequestData(BaseModel):
@@ -69,14 +68,6 @@ class MakeRequestData(BaseModel):
 
 class MakeRequestRequest(BaseRequest):
     params: MakeRequestData
-
-
-class LoadPEMData(BaseModel):
-    cert_id: Path
-
-
-class LoadPEMRequest(BaseRequest):
-    params: LoadPEMData
 
 
 class ApiRequest:
@@ -135,8 +126,3 @@ async def make_request(request: MakeRequestRequest):
     return {
         "result": platform.makeRequest(api_request, make_request_data.follow_redirects)
     }
-
-
-@app.post("/loadPEM")
-async def load_pem(request: LoadPEMRequest):
-    return {"result": platform.loadPEM(str(request.params.cert_id))}

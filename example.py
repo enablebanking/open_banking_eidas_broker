@@ -7,8 +7,8 @@ from urllib.error import HTTPError
 # requests used as an example for sending request. You can safely use urllib
 import requests
 
-# import enablebanking
-# from enablebanking.eb.proxy_platform import ProxyPlatform
+import enablebanking
+from enablebanking.eb.proxy_platform import ProxyPlatform
 
 HOST = "https://localhost"
 BROKER_CLIENT_CERT_PATH = "broker_client_tls/client.crt"
@@ -105,23 +105,9 @@ def make_request_eb():
     )
 
 
-def load_pem() -> str:
-    res = requests.post(
-        HOST + "/loadPEM",
-        json={
-            "params": {"cert_id": "public.crt"},
-        },
-        headers={"Content-Type": "application/json"},
-        cert=(BROKER_CLIENT_CERT_PATH, BROKER_CLIENT_KEY_PATH),
-        verify=BROKER_CA_CERT_PATH,
-    )
-    return res.json()["result"]
-
-
 if __name__ == "__main__":
     # You can uncomment these functions one by one and check their responses
-    # response = sign()
+    response = sign()
     # response = make_request_urllib()
     # response = make_request_eb()
-    response = load_pem()
     print(response)
