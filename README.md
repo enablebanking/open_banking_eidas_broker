@@ -1,5 +1,5 @@
-| CAUTION: This project may not suite production use and is mainly intended for testing! |
-| -------------------------------------------------------------------------------------- |
+| CAUTION: This project is originally intended for testing, be careful if using in production  |
+| -------------------------------------------------------------------------------------------- |
 
 # Open Banking eIDAS broker
 
