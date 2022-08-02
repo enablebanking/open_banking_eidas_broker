@@ -144,20 +144,19 @@ openssl verify -purpose sslclient -CAfile ca.crt client.crt
 In order to build an image you need to:
 
 1. Have docker installed
-2. Put you QWAC (mTLS) and QSeal (signature) certificates (if your API requires those) into `open_banking_certs/` directory.<br/>
+2. Put broker certificates you generated earlier into `broker_tls/` directory under following names:
+    - `server.key`  # private key of the server (broker) certificate
+    - `server.crt`  # public server (broker) certificate
+    - `ca.crt`  # public CA certificate
+3. Go to the directory with `Dockerfile`
+4. Run `docker build -t <image_name> .` (probably you need to prepend this command with `sudo`)<br/>
+5. Put you QWAC (mTLS) and QSealC (signature) certificates into `open_banking_certs/` directory, which will be mounted to the container.<br/>
 You can put certificates in an arbitrary order/names. Later you will have to provide paths to those certificates.<br/>
 All certificates must be in the PEM format.</br>
     - `qwac.key`  # QWAC private key. Needed for establishing mTLS
     - `qwac.crt`  # QWAC public certificate. Needed for establishing mTLS
     - `qwac_chain.crt` (optional)  # QWAC certificate chain. Some banks require it
     - `qseal.key`  # QSeal private key. Used for creating signatures
-3. Put broker certificates you generated earlier into `broker_tls/` directory under following names:
-    - `server.key`  # private server (broker) certificate
-    - `server.crt`  # public server (broker) key
-    - `ca.crt`  # public certificate authority certificate
-If you want to generate self-signed certificates, see instructions below
-4. Go to the directory with `Dockerfile`
-5. Run `docker build -t <image_name> .` (probably you need to prepend this command with `sudo`)<br/>
 6. Start built image:
 
 ```
