@@ -144,7 +144,7 @@ openssl verify -purpose sslclient -CAfile ca.crt client.crt
 In order to build an image you need to:
 
 1. Have docker installed
-2. Put broker certificates you generated earlier into `broker_tls/` directory under following names:
+2. Put broker certificates you generated earlier into `server_certs/` directory under following names:
     - `server.key`  # private key of the server (broker) certificate
     - `server.crt`  # public server (broker) certificate
     - `ca.crt`  # public CA certificate
@@ -157,15 +157,16 @@ All certificates must be in the PEM format.</br>
     - `qwac.crt`  # QWAC public certificate. Needed for establishing mTLS
     - `qwac_chain.crt` (optional)  # QWAC certificate chain. Some banks require it
     - `qseal.key`  # QSeal private key. Used for creating signatures
-6. Start built image:
+6. Start built image:  
 
 ```
 docker run -d \
     --name <container_name> \
     -p 443:80 \
-    --mount type=bind,source="$(pwd)"/open_banking_certs/,target=/app/open_banking_certs/ \
+    --mount type=bind,source="$(pwd)"/open_banking_certs/,target=/app/open_banking_certs/ \  
+    --mount type=bind,source="$(pwd)"/server_certs/,target=/app/broker_tls/ \
     <image_name>
-```
+```  
 
 You can also specify `verify_cert` environment variable using `-e` flag if you want you requests to banks to be verified against QWAC certificate chain (if it is provided).
 
