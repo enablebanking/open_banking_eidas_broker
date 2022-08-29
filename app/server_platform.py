@@ -160,8 +160,8 @@ class ServerPlatform:
         if isinstance(key, (str, bytes)):
             key = self._force_bytes(key)
 
+            backend = default_backend()
             try:
-                backend = default_backend()
                 key = backend.load_pem_private_key(key, password)
             except ValueError:
                 key = backend.load_pem_public_key(key)
