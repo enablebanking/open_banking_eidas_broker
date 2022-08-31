@@ -126,3 +126,8 @@ async def make_request(request: MakeRequestRequest):
     return {
         "result": platform.makeRequest(api_request, make_request_data.follow_redirects)
     }
+
+
+@app.get("/health")
+async def health():
+    return {"result": "ok"}

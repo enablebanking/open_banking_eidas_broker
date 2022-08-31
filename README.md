@@ -7,12 +7,13 @@ The broker service provides possibility to use eIDAS certificates *(in practice 
 certificates)* for generating signatures and sending HTTP requests over mTLS connections
 without need to expose private keys of the certificates with the service client.
 
-The web API of the broker service consists of 2 endpoints:
+The web API of the broker service consists of 3 endpoints:
 
 1. `/sign` -- for signing received data with a QSeal certificate and returning this
    signature back;
 2. `/makeRequest` -- for making HTTP request over mutual TLS connection established with
    a QWAC certificate and returning response back.
+3. `/health` -- for health checks to make sure that application is up and running.
 
 Access to the broker service APIs is provided over mTLS and authentication of the client is
 done based on the client certificate. The client certificate and the broker server certificate
