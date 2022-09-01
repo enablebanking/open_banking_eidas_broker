@@ -6,3 +6,5 @@ broker_client_tls
 eb
 .vscode
 .DS_Store
+/certs
+**/__pycache__
