@@ -21,10 +21,6 @@ loglevel = use_loglevel
 workers = web_concurrency
 keepalive = 120
 errorlog = "-"
-certfile = "/app/broker_tls/server.crt"
-keyfile = "/app/broker_tls/server.key"
-ca_certs = "/app/broker_tls/ca.crt"
-cert_reqs = VerifyMode.CERT_REQUIRED
 
 # For debugging and testing
 log_data = {
