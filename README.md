@@ -74,7 +74,7 @@ with your values).
 
 ```bash
 openssl req -new -x509 -days 365 -key ca.key -out ca.crt \
-    -subj "/C=FI/ST=Uusima/L=Helsinki/O=ExampleOrganisation/CN=www.bigorg.com"
+    -subj "/C=FI/ST=Uusimaa/L=Helsinki/O=ExampleOrganisation/CN=ca.example.com"
 ```
 
 ### Server
@@ -92,7 +92,7 @@ which is used for accessing it).
 
 ```bash
 openssl req -new -key server.key -out server.csr \
-    -subj "/C=FI/ST=Uusima/L=Helsinki/O=ExampleServerOrganisation/CN=localhost"
+    -subj "/C=FI/ST=Uusimaa/L=Helsinki/O=ExampleOrganisation/CN=localhost"
 ```
 
 The server certificate is to be signed with ca.key. **To ensure security DO NOT use md5 
@@ -111,11 +111,12 @@ client site).
 openssl genrsa -out client.key 4096
 ```
 
-And client CSR is generated the same way how it's done for the server.
+And client CSR is generated the same way how it's done for the server (please not that
+the subject should be different from the CA's subject).
 
 ```bash
 openssl req -new -key client.key -out client.csr \
-    -subj "/C=FI/ST=Uusima/L=Helsinki/O=ExampleClientOrganisation/CN=www.localorg.com"
+    -subj "/C=FI/ST=Uusimaa/L=Helsinki/O=ExampleOrganisation/CN=client.example.com"
 ```
 
 Finally `client.csr` can be transferred to the site where `ca.key` is available and
