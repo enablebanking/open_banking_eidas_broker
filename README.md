@@ -152,7 +152,8 @@ In order to build an image you need to:
     - `ca.crt`  # public CA certificate
 3. Go to the directory with `Dockerfile`
 4. Run `docker build -t <image_name> .` (probably you need to prepend this command with `sudo`)<br/>
-5. Put you QWAC (mTLS) and QSealC (signature) certificates into `open_banking_certs/` directory, which will be mounted to the container.<br/>
+5. Put your eIDAS certificates and their private keys, which will be used when accessing ASPSPs' APIs,
+   i.e. QWAC (mTLS) and QSealC (signature) into `open_banking_certs/` directory, which will be mounted to the container.<br/>
 You can put certificates in an arbitrary order/names. Later you will have to provide paths to those certificates.<br/>
 All certificates must be in the PEM format.</br>
     - `qwac.key`  # QWAC private key. Needed for establishing mTLS
