@@ -22,18 +22,11 @@ from cryptography.hazmat.primitives.asymmetric import ec, padding
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
 
+from models import Pair, TLS, ApiRequest
 
-def _params_to_pairs(params):
+
+def _params_to_pairs(params: list[Pair]) -> list[tuple[str, str]]:
     return [(param.name, param.value) for param in params] if params else []
-
-
-# class used as a workaround for cases where server checks for case of headers (even though it shouln't)
-class SafeString(str):
-    def title(self):
-        return self
-
-    def capitalize(self):
-        return self
 
 
 class NoRedirectHandler(HTTPRedirectHandler):
@@ -47,7 +40,7 @@ class NoRedirectHandler(HTTPRedirectHandler):
 class ServerPlatform:
     PATH_PREFIX = "/app/open_banking_certs/"
 
-    def update_tls_paths(self, tls):
+    def update_tls_paths(self, tls: TLS):
         fields = ["cert_path", "key_path", "ca_cert_path"]
         for field in fields:
             if hasattr(tls, field):
@@ -55,7 +48,7 @@ class ServerPlatform:
                 if field_value and not field_value.startswith(self.PATH_PREFIX):
                     setattr(tls, field, self.PATH_PREFIX + field_value)
 
-    def get_ssl_context(self, tls):
+    def get_ssl_context(self, tls: TLS | None) -> ssl.SSLContext:
         if tls:
             self.update_tls_paths(tls)
             ssl_context = ssl.create_default_context()
@@ -78,11 +71,11 @@ class ServerPlatform:
             ssl_context = ssl._create_unverified_context()
         return ssl_context
 
-    def makeRequest(self, request, follow_redirects: Optional[bool] = True):
+    def makeRequest(self, request: ApiRequest, follow_redirects: Optional[bool] = True):
         url = request.origin + request.path
         query = urlencode(_params_to_pairs(request.query))
         data = request.body.encode()
-        headers = dict((SafeString(a), b) for a, b in _params_to_pairs(request.headers))
+        headers = dict((a, b) for a, b in _params_to_pairs(request.headers))
         if query:
             url += "?" + query
         logging.debug(
@@ -123,7 +116,7 @@ class ServerPlatform:
             return {"status": e.status, "response": response, "headers": headers}
 
     @staticmethod
-    def _force_bytes(value):
+    def _force_bytes(value: str | bytes) -> bytes:
         """Convert value to bytes if necessary
 
         Arguments:
@@ -137,12 +130,9 @@ class ServerPlatform:
         """
         if isinstance(value, str):
             return value.encode("utf-8")
-        elif isinstance(value, bytes):
-            return value
-        else:
-            raise TypeError("Expected a string value")
+        return value
 
-    def _prepare_key(self, key, password=None):
+    def _prepare_key(self, key: bytes, password: str | None = None):
         """Create a key out of .pem key
 
         Arguments:
@@ -157,21 +147,18 @@ class ServerPlatform:
         Returns:
             cryptography.hazmat.backends.openssl.rsa._RSAPrivateKey -- Private key class instance
         """
-        if isinstance(key, (str, bytes)):
-            key = self._force_bytes(key)
+        key = self._force_bytes(key)
 
-            backend = default_backend()
-            try:
-                key = backend.load_pem_private_key(key, password)
-            except ValueError:
-                key = backend.load_pem_public_key(key)
-        else:
-            raise TypeError("Expecting a PEM-formatted key.")
+        backend = default_backend()
+        try:
+            key = backend.load_pem_private_key(key, password)
+        except ValueError:
+            key = backend.load_pem_public_key(key)
 
         return key
 
     @staticmethod
-    def _decode_signature(signature, hash_algorithm):
+    def _decode_signature(signature: bytes, hash_algorithm: str) -> bytes:
         hash_algorithms_map = {"SHA256": 256}
         try:
             num_bits = hash_algorithms_map[hash_algorithm]
