@@ -1,7 +1,8 @@
-FROM nginx:1.23.1
+FROM python:3.11.1-slim-bullseye
 
 RUN apt update && apt upgrade -y
-RUN apt install python3 python3-pip -y
+RUN apt install nginx -y
+
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 COPY ./app /app
@@ -10,7 +11,6 @@ COPY gunicorn_conf.py /gunicorn_conf.py
 
 COPY run.sh .
 RUN chmod +x run.sh
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/sites-available/default
 
-# ENTRYPOINT gunicorn app.main:app -c /gunicorn_conf.py -k uvicorn.workers.UvicornWorker --bind=unix:server.sock --chdir=/app
 ENTRYPOINT ./run.sh
