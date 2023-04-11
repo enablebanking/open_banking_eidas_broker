@@ -17,8 +17,13 @@ from urllib.request import (
 
 from cryptography.utils import int_to_bytes
 from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.backends.openssl.backend import Backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec, padding
+from cryptography.hazmat.primitives.asymmetric.types import (
+    PrivateKeyTypes,
+    PublicKeyTypes,
+)
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
 
@@ -132,7 +137,7 @@ class ServerPlatform:
             return value.encode("utf-8")
         return value
 
-    def _prepare_key(self, key: bytes, password: str | None = None):
+    def _prepare_key(self, key: bytes) -> PrivateKeyTypes | PublicKeyTypes:
         """Create a key out of .pem key
 
         Arguments:
@@ -149,13 +154,14 @@ class ServerPlatform:
         """
         key = self._force_bytes(key)
 
-        backend = default_backend()
+        backend: Backend = default_backend()
+        key_obj: PrivateKeyTypes | PublicKeyTypes
         try:
-            key = backend.load_pem_private_key(key, password)
+            key_obj = backend.load_pem_private_key(key, None, True)
         except ValueError:
-            key = backend.load_pem_public_key(key)
+            key_obj = backend.load_pem_public_key(key)
 
-        return key
+        return key_obj
 
     @staticmethod
     def _decode_signature(signature: bytes, hash_algorithm: str) -> bytes:
