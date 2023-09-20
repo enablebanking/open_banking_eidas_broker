@@ -6,7 +6,7 @@ from server_platform import ServerPlatform
 import models
 
 
-app = FastAPI()
+app = FastAPI(title="Open Banking eIDAS broker")
 # We could pass these files' paths from environment variables
 platform = ServerPlatform()
 

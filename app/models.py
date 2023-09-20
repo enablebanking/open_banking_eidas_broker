@@ -28,7 +28,7 @@ class SignParams(BaseModel):
     key_id: str = Field(
         ..., description="Key ID. Identification of a key (path to a key) to sign with"
     )
-    hash_algorithm: str | None = Field(
+    hash_algorithm: HashAlgorithm | None = Field(
         HashAlgorithm.SHA256, description="Hash algorithm to use"
     )
     crypto_algorithm: CryptoAlgorithm | None = Field(
