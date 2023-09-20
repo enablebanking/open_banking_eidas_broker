@@ -1,0 +1,462 @@
+{
+    "openapi": "3.0.2",
+    "info": {
+        "title": "Open Banking eIDAS broker",
+        "version": "0.1.0"
+    },
+    "paths": {
+        "/": {
+            "get": {
+                "summary": "Read Root",
+                "operationId": "read_root__get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/sign": {
+            "post": {
+                "summary": "Sign",
+                "description": "Signs data with a key and returns signature",
+                "operationId": "sign_sign_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SignRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SignResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/makeRequest": {
+            "post": {
+                "summary": "Make Request",
+                "description": "Makes a request to a given origin, path and method. Uses TLS if provided",
+                "operationId": "make_request_makeRequest_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/MakeRequestRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MakeRequestResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/health": {
+            "get": {
+                "summary": "Health",
+                "description": "Health check. Returns 200 if service is up",
+                "operationId": "health_health_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "CryptoAlgorithm": {
+                "title": "CryptoAlgorithm",
+                "enum": [
+                    "RS",
+                    "PS"
+                ],
+                "type": "string",
+                "description": "An enumeration."
+            },
+            "HTTPValidationError": {
+                "title": "HTTPValidationError",
+                "type": "object",
+                "properties": {
+                    "detail": {
+                        "title": "Detail",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ValidationError"
+                        }
+                    }
+                }
+            },
+            "HashAlgorithm": {
+                "title": "HashAlgorithm",
+                "enum": [
+                    "SHA256",
+                    "SHA512"
+                ],
+                "type": "string",
+                "description": "An enumeration."
+            },
+            "MakeRequestData": {
+                "title": "MakeRequestData",
+                "required": [
+                    "request"
+                ],
+                "type": "object",
+                "properties": {
+                    "request": {
+                        "$ref": "#/components/schemas/MakeRequestParams"
+                    },
+                    "follow_redirects": {
+                        "title": "Follow Redirects",
+                        "type": "boolean",
+                        "description": "Flag to follow redirects. If set to false then 3XX responses will be returned as is",
+                        "default": true
+                    }
+                }
+            },
+            "MakeRequestParams": {
+                "title": "MakeRequestParams",
+                "required": [
+                    "method",
+                    "origin",
+                    "path"
+                ],
+                "type": "object",
+                "properties": {
+                    "method": {
+                        "title": "Method",
+                        "type": "string",
+                        "description": "HTTP method",
+                        "example": "GET"
+                    },
+                    "origin": {
+                        "title": "Origin",
+                        "type": "string",
+                        "description": "Origin of the request",
+                        "example": "https://postman-echo.com"
+                    },
+                    "path": {
+                        "title": "Path",
+                        "type": "string",
+                        "description": "Path of the request",
+                        "example": "/get"
+                    },
+                    "query": {
+                        "title": "Query",
+                        "type": "array",
+                        "items": {
+                            "maxItems": 2,
+                            "minItems": 2,
+                            "type": "array",
+                            "items": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "description": "Query parameters",
+                        "example": [
+                            [
+                                "foo",
+                                "bar"
+                            ]
+                        ]
+                    },
+                    "body": {
+                        "title": "Body",
+                        "type": "string",
+                        "description": "Body of the request",
+                        "default": "",
+                        "example": "{\"foo\": \"bar\"}"
+                    },
+                    "headers": {
+                        "title": "Headers",
+                        "type": "array",
+                        "items": {
+                            "maxItems": 2,
+                            "minItems": 2,
+                            "type": "array",
+                            "items": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "description": "Headers of the request",
+                        "example": [
+                            [
+                                "Content-Type",
+                                "application/json"
+                            ]
+                        ]
+                    },
+                    "tls": {
+                        "title": "Tls",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/TLS"
+                            }
+                        ],
+                        "description": "TLS configuration",
+                        "example": {
+                            "cert_path": "cert.pem",
+                            "key_path": "key.pem"
+                        }
+                    }
+                }
+            },
+            "MakeRequestRequest": {
+                "title": "MakeRequestRequest",
+                "required": [
+                    "params"
+                ],
+                "type": "object",
+                "properties": {
+                    "params": {
+                        "$ref": "#/components/schemas/MakeRequestData"
+                    }
+                }
+            },
+            "MakeRequestResponse": {
+                "title": "MakeRequestResponse",
+                "required": [
+                    "result"
+                ],
+                "type": "object",
+                "properties": {
+                    "result": {
+                        "$ref": "#/components/schemas/MakeRequestResponseResult"
+                    }
+                }
+            },
+            "MakeRequestResponseResult": {
+                "title": "MakeRequestResponseResult",
+                "required": [
+                    "status"
+                ],
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "title": "Status",
+                        "type": "integer",
+                        "description": "HTTP status code"
+                    },
+                    "headers": {
+                        "title": "Headers",
+                        "type": "array",
+                        "items": {
+                            "maxItems": 2,
+                            "minItems": 2,
+                            "type": "array",
+                            "items": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "description": "Response headers",
+                        "example": [
+                            [
+                                "Content-Type",
+                                "application/json"
+                            ]
+                        ]
+                    },
+                    "response": {
+                        "title": "Response",
+                        "type": "string",
+                        "description": "Response body",
+                        "default": "",
+                        "example": "{\"foo\": \"bar\"}"
+                    }
+                }
+            },
+            "SignParams": {
+                "title": "SignParams",
+                "required": [
+                    "data",
+                    "key_id"
+                ],
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "title": "Data",
+                        "type": "string",
+                        "description": "Data to sign"
+                    },
+                    "key_id": {
+                        "title": "Key Id",
+                        "type": "string",
+                        "description": "Key ID. Identification of a key (path to a key) to sign with"
+                    },
+                    "hash_algorithm": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/HashAlgorithm"
+                            }
+                        ],
+                        "description": "Hash algorithm to use",
+                        "default": "SHA256"
+                    },
+                    "crypto_algorithm": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/CryptoAlgorithm"
+                            }
+                        ],
+                        "description": "Crypto algorithm to use",
+                        "default": "RS"
+                    }
+                }
+            },
+            "SignRequest": {
+                "title": "SignRequest",
+                "required": [
+                    "params"
+                ],
+                "type": "object",
+                "properties": {
+                    "params": {
+                        "$ref": "#/components/schemas/SignParams"
+                    }
+                }
+            },
+            "SignResponse": {
+                "title": "SignResponse",
+                "required": [
+                    "result"
+                ],
+                "type": "object",
+                "properties": {
+                    "result": {
+                        "title": "Result",
+                        "type": "string",
+                        "description": "Base64 encoded signature"
+                    }
+                }
+            },
+            "TLS": {
+                "title": "TLS",
+                "required": [
+                    "cert_path",
+                    "key_path"
+                ],
+                "type": "object",
+                "properties": {
+                    "cert_path": {
+                        "title": "Cert Path",
+                        "type": "string"
+                    },
+                    "key_path": {
+                        "title": "Key Path",
+                        "type": "string"
+                    },
+                    "ca_cert_path": {
+                        "title": "Ca Cert Path",
+                        "type": "string"
+                    },
+                    "key_password": {
+                        "title": "Key Password",
+                        "type": "string"
+                    }
+                }
+            },
+            "ValidationError": {
+                "title": "ValidationError",
+                "required": [
+                    "loc",
+                    "msg",
+                    "type"
+                ],
+                "type": "object",
+                "properties": {
+                    "loc": {
+                        "title": "Location",
+                        "type": "array",
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                }
+                            ]
+                        }
+                    },
+                    "msg": {
+                        "title": "Message",
+                        "type": "string"
+                    },
+                    "type": {
+                        "title": "Error Type",
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    }
+}
