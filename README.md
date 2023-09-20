@@ -9,11 +9,13 @@ without need to expose private keys of the certificates with the service client.
 
 The web API of the broker service consists of 3 endpoints:
 
-1. `/sign` -- for signing received data with a QSeal certificate and returning this
+1. `POST /sign` -- for signing received data with a QSeal certificate and returning this
    signature back;
-2. `/makeRequest` -- for making HTTP request over mutual TLS connection established with
-   a QWAC certificate and returning response back.
-3. `/health` -- for health checks to make sure that application is up and running.
+2. `POST /makeRequest` -- for making HTTP request over mutual TLS connection established with
+   a QWAC certificate and returning response back;
+3. `GET /health` -- for health checks to make sure that application is up and running.
+
+For more information please refer to the [API specification](#api-specification).
 
 Access to the broker service APIs is provided over mTLS and authentication of the client is
 done based on the client certificate. The client certificate and the broker server certificate
@@ -175,10 +177,116 @@ You can also specify `verify_cert` environment variable using `-e` flag if you w
 
 7. Go to `http(s)://localhost:<host_port>` to verify that everything works (you will need to provide broker certificates with you request in order to see the page)
 
-## Check available endpoints
-Container endpoints documentation is available at `/docs` or `/redoc`:<br/>
-`http(s)://localhost:<host_port>/docs`<br/>
-`http(s)://localhost:<host_port>/redoc`
+## API specification
 
+Full API specification of in the OpenAPI format is available in the [openapi.json](openapi.json) file.
+
+When running the service locally, endpoints documentation is available at `/docs` or `/redoc`:
+
+- `http(s)://localhost:<host_port>/docs` (Swagger UI)
+- `http(s)://localhost:<host_port>/redoc` (Redoc)
+
+### Examples
+
+For the service invocation examples using [requests](https://requests.readthedocs.io/) library,
+please refer to [example.py](examples/example.py). The example makes "proxied" calls (using
+`POST /makeRequest`) to https://postman-echo.com and signs test string (using `POST /sign`) with
+[example.key](examples/example.key).
+
+### RS256 signing (RSASSA-PKCS1-v1_5 + SHA256)
+
+`POST /sign`
+
+Request payload:
+
+```
+{
+    "params": {
+        "data": "a string to sign",
+        "key_id": "example.key",
+        "hash_algorithm": "SHA256",
+        "crypto_algorithm": "RS"
+    }
+}
+```
+
+Response payload:
+
+```
+{
+    "result": "EK148de5pvmRoHpsd1HplHLjS4KjMrfJK4RrGyeyhourddCAXJP+7+ZBfVZYdzf8/B/KhyYgY657RyHtTy33Am9xbtJQpIr3q4xXN4VYuwnHHaqMg9GgnmUC9Cze9OCeXdo7w+TVVf6B+vDp6tFWvTnZDfd1pe+JhGIAeDDVqNvNZu+MQ8zjfO3Y/8XHFrPmfLMge6WZLCNJTHmqiJEMIEWVJXgjG1OPnZzadax+lAEL4hm/fA/biLh6etNyiwlNx7mUYCEc4gOuKjBuzNwEwc5Yp8RW/ibiX6n0UJhIlpShxag0+Lv2uanSsxna9NhMYgJuf+jjNLhTDsFwBvhMYduMCHCeO2T0d3k1VZoj0MAhT8Luc8iAWT8oJL4qqEAU6A6TqNV/pmuJfFnlyeTwxTHauDb/UtLmXErp3khu2z/yD+Y/TVFSrHjZ2QaKoXf4xsLdbFLHyzG4OwV13Pl9fK4x40oKM84i1Di4oxkAdwM4UuhEK33QCh/x5fKbq8SB2qSQOyh99/w0XoAOIviuh+U/ibLxQqDku8jyKj8Zp8femRr81cgjZonRX3uFbqOnUhjHiTpIZAZVUhhPkPM2tzkVixCp9tKRevurK8ZfJy/ZJEhMwfPgGRQn3Cn3wG09Dr9OFXHmz0cmJnAV0ZVXJnD0U4tupYGI18Vgdixdtog="
+}
+```
+
+*The above example uses [example.key](examples/example.key) (in case you want to verify the result you
+get).*
+
+### PS256 signing (RSASSA-PSS + SHA256)
+
+`POST /sign`
+
+Request payload:
+
+```
+{
+    "params": {
+        "data": "a string to sign",
+        "key_id": "example.key",
+        "hash_algorithm": "SHA256",
+        "crypto_algorithm": "PS"
+    }
+}
+```
+
+Response payload:
+
+```
+{
+    "result": "I90i3W+JdWlt21titsP14N2DUnrM5lTZtiLTQGWRMM5gBent25ktWmOaxNTQUdD0Nt8PEu9YNMKVCQ9nbWVzYYPM9Vto59hnBRD6Eb2xPQ1T0v7ecBTrkI42+1mrZ3eZbbTCLCIseWtVJXpTz34kW5kQRueTgPlTAwLzL13gQWLwzSpq4ENX4IL9EqczTnyBeOdQuIaIE7yj2bdiCsqF2M/N8Sdo1R2kcQoUGuVeBe3A3XfLtLzPvTDoyiQhHDVtxv/tnb0CmGWGm3/fm0Eu6Vr3KmO5AOAWeh01erQA4NZ88oJkexNt+IN5LoNZ2jofCu4k7uOnpPOkSizWeF4c8i/LekcwySH0DDyAMkjriGtJx0y+r7RC3zAqSdh+aWWRSpbQVOcQp32zSs4F0LsaFM1fL5JjdbyjrhHO8ymW1/coQP63hGjYvlAMAB0g+gx0Ue7IIDJmcTGcZf3o8fag9BuqZo3QKgVmS85alHs/yIJDCuNTnX83NNwgbZdrsQr3Oc4k3bdQ5CCR8zo4CNhVkS/fTXSNn1fMicTxRXcL5JRFKCQAuWM9I3p/YUb0yGN3xvL7XMXw2sbkt+RrkNsRmM9UKs54eKkIPdPeZ0Zcn5AzyKMIE9DTqwkSaqID3nKIXAaR73o9diK9WiOACim2FZ2Na2m0kz67+xfgWW+OLlw="
+}
+```
+
+*The above example uses [example.key](examples/example.key) (in case you want to verify the result you
+get).*
+
+## Implementation
+
+The service is implemented in Python 3.11. RESTful API of the service is implemented using the FastAPI
+framework.
+
+`ServicePlatform` class from [server_platform.py](app/server_platform.py) contains `signWithKey` and
+`makeRequest` methods, which correspond to `POST /sign` and `POST /makeRequest` API endpoints.
+
+Cryptographic operations (necessary for implementation of the `POST /sign` endpoint) use
+[cryptography](https://cryptography.io/) library (which itself depends on the OpenSSL C library).
+
+Making HTTP request (for the `POST /makeRequest` endpoint) is done with the Python's standard `urllib`
+library.
+
+Certificates and their private keys used for making mTLS connections and cryptographic signing are
+read from the file system, which can be changed if necessary by changing corresponding functionality
+in the `ServicePlatform` class.
+
+Implementation of secured access to the service (using client TLS certificate verification) relies on
+[nginx](https://nginx.org/). Please refer to [nginx.conf](nginx.conf).
+
+### Running service locally without Docker
+
+Setting up environment:
+
+```
+pyenv install 3.11.1
+pyenv virtualenv 3.11.1 open-banking-eidas-broker-3.11.1
+pyenv activate open-banking-eidas-broker-3.11.1
+pip install -r requirements.txt
+```
+
+Running the service:
+
+```
+gunicorn app.main:app -c gunicorn_conf.py -k uvicorn.workers.UvicornWorker --bind=:8888 --chdir=app
+```
+
+--
 
 Copyright 2021 Enable Banking Oy
