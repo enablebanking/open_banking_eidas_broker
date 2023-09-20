@@ -31,7 +31,11 @@ async def read_root():
     return {"result": "eIDAS broker"}
 
 
-@app.post("/sign")
+@app.post(
+    "/sign",
+    description="Signs data with a key and returns signature",
+    response_model=models.SignResponse,
+)
 async def sign(request: models.SignRequest):
     sign_params: models.SignParams = request.params
     return {
@@ -44,7 +48,11 @@ async def sign(request: models.SignRequest):
     }
 
 
-@app.post("/makeRequest")
+@app.post(
+    "/makeRequest",
+    description="Makes a request to a given origin, path and method. Uses TLS if provided",
+    response_model=models.MakeRequestResponse,
+)
 async def make_request(request: models.MakeRequestRequest):
     make_request_data = request.params
     make_request_params = make_request_data.request
@@ -70,6 +78,6 @@ async def make_request(request: models.MakeRequestRequest):
     }
 
 
-@app.get("/health")
+@app.get("/health", description="Health check. Returns 200 if service is up")
 async def health():
     return {"result": "ok"}

@@ -7,9 +7,6 @@ from urllib.error import HTTPError
 # requests used as an example for sending request. You can safely use urllib
 import requests
 
-import enablebanking
-from enablebanking.eb.proxy_platform import ProxyPlatform
-
 HOST = "https://localhost"
 BROKER_CLIENT_CERT_PATH = "broker_client_tls/client.crt"
 BROKER_CLIENT_KEY_PATH = "broker_client_tls/client.key"
@@ -71,43 +68,8 @@ def make_request_urllib() -> Dict[Any, Any]:
         return json.loads(proxy_response)
 
 
-def make_request_eb():
-    connector_settings = {
-        "sandbox": True,
-        "consentId": None,
-        "accessToken": None,
-        "refreshToken": None,
-        "clientId": "some_id",
-        "clientSecret": "some_secret",
-        "certPath": "bank_name/public.crt",
-        "keyPath": "bank_name/private.key",
-        "signKeyPath": "signature.key",
-        "signPubKeySerial": "123",
-        "signFingerprint": "322123123",
-        "signCertUrl": "https://example.com/test-qseal-full.crt",
-        "paymentAuthRedirectUri": "https://example.com/redirect_url",
-        "paymentAuthState": "test",
-    }
-    proxy_platform = ProxyPlatform(
-        HOST, BROKER_CLIENT_CERT_PATH, BROKER_CLIENT_KEY_PATH, BROKER_CA_CERT_PATH
-    )
-    api_client = enablebanking.ApiClient(
-        "Alior", connector_settings, platform=proxy_platform
-    )
-    auth_api = enablebanking.AuthApi(api_client)
-    access = enablebanking.Access(balances={}, transactions={})
-    return auth_api.get_auth(
-        "code",
-        "https://enablebanking.com/auth_redirect",
-        ["aisp"],
-        state="test",
-        access=access,
-    )
-
-
 if __name__ == "__main__":
     # You can uncomment these functions one by one and check their responses
     response = sign()
     # response = make_request_urllib()
-    # response = make_request_eb()
     print(response)
