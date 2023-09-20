@@ -1,5 +1,5 @@
-| CAUTION: This project is originally intended for testing, be careful if using in production  |
-| -------------------------------------------------------------------------------------------- |
+| CAUTION: This project works with highly sensitive data, thus carefully consider its configuration when using in production  |
+| --------------------------------------------------------------------------------------------------------------------------- |
 
 # Open Banking eIDAS broker
 
@@ -19,8 +19,8 @@ Access to the broker service APIs is provided over mTLS and authentication of th
 done based on the client certificate. The client certificate and the broker server certificate
 shall be signed using the same CA certificate.
 
-The broker service is primarily designed to be called from [enable:Banking aggregation
-SDK](https://enablebanking.com/docs/sdk/latest/), which provides special `BrokerPlatform`
+The broker service is primarily designed to be called from [Enable Banking aggregation
+core](https://enablebanking.com/docs/core/latest/), which provides special `BrokerPlatform`
 class offloading signing and mTLS funtionality to the broker. 
 
 ## Accessing ASPSP APIs through eIDAS broker
