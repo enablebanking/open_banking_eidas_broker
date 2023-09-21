@@ -218,8 +218,8 @@ Response payload:
 }
 ```
 
-*The above example uses [example.key](examples/example.key) (in case you want to verify the result you
-get).*
+*The above example uses [example.key](examples/example.key). In case you want to verify the result you
+get, you can simply compare it to the result from above, it should match exactly.*
 
 ### PS256 signing (RSASSA-PSS + SHA256)
 
@@ -246,8 +246,9 @@ Response payload:
 }
 ```
 
-*The above example uses [example.key](examples/example.key) (in case you want to verify the result you
-get).*
+*The above example uses [example.key](examples/example.key). In case you want to verify the result you
+get, it is necessary to generate a corresponding public key and verify result using it, because the
+result will be always different due to probabilistic behavior of RSASSA-PSS.*
 
 ## Implementation
 
