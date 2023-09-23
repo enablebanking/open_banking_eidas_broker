@@ -9,7 +9,7 @@ without need to expose private keys of the certificates with the service client.
 
 The web API of the broker service consists of 3 endpoints:
 
-1. `POST /sign` -- for signing received data with a QSeal certificate and returning this
+1. `POST /sign` -- for signing received data with a QSealC certificate and returning this
    signature back;
 2. `POST /makeRequest` -- for making HTTP request over mutual TLS connection established with
    a QWAC certificate and returning response back;
@@ -32,7 +32,7 @@ The flow of the calls between client, broker service and ASPSP looks like this:
 ```
    [Client premises]            --   [Broker service holding eIDAS keys]   --   [Open banking API (ASPSP)]
 
-1. OB API request to be signed  ->   Signing the data using a QSeal
+1. OB API request to be signed  ->   Signing the data using a QSealC
                                      certificate named by the client
    Request signature            <-   and returning the signature
 
@@ -153,29 +153,40 @@ In order to build an image you need to:
     - `server.crt`  # public server (broker) certificate
     - `ca.crt`  # public CA certificate
 3. Go to the directory with `Dockerfile`
-4. Run `docker build -t <image_name> .` (probably you need to prepend this command with `sudo`)<br/>
+4. Run `docker build -t <image_name> .` (probably you need to prepend this command with `sudo`)
 5. Put your eIDAS certificates and their private keys, which will be used when accessing ASPSPs' APIs,
-   i.e. QWAC (mTLS) and QSealC (signature) into `open_banking_certs/` directory, which will be mounted to the container.<br/>
-You can put certificates in an arbitrary order/names. Later you will have to provide paths to those certificates.<br/>
-All certificates must be in the PEM format.</br>
+   i.e. QWAC (mTLS) and QSealC (signature) into `open_banking_certs/` directory, which will be mounted
+   to the container.
+
+   You can put certificates in an arbitrary order/names. Later you will have to provide paths to those
+   certificates.
+
+   All certificates must be in the PEM format.
+
     - `qwac.key`  # QWAC private key. Needed for establishing mTLS
     - `qwac.crt`  # QWAC public certificate. Needed for establishing mTLS
-    - `qwac_chain.crt` (optional)  # QWAC certificate chain. Some banks require it
-    - `qseal.key`  # QSeal private key. Used for creating signatures
+    - `qwac_chain.crt` (optional)  # QWAC certificate chain. Some ASPSPs require it
+    - `qsealc.key`  # QSealC private key. Used for creating signatures
 6. Start built image:  
 
-```
-docker run -d \
-    --name <container_name> \
-    -p 443:80 \
-    --mount type=bind,source="$(pwd)"/open_banking_certs/,target=/app/open_banking_certs/ \  
-    --mount type=bind,source="$(pwd)"/server_certs/,target=/app/broker_tls/ \
-    <image_name>
-```  
+   ```
+   docker run -d \
+       --name <container_name> \
+       -p 443:80 \
+       --mount type=bind,source="$(pwd)"/open_banking_certs/,target=/app/open_banking_certs/ \
+       --mount type=bind,source="$(pwd)"/server_certs/,target=/app/broker_tls/ \
+       <image_name>
+   ```
 
-You can also specify `verify_cert` environment variable using `-e` flag if you want you requests to banks to be verified against QWAC certificate chain (if it is provided).
+   You can also specify `verify_cert` environment variable using `-e` flag if you want you requests to
+   ASPSPs to be verified against QWAC certificate chain (if it is provided).
+7. You can verify that the service is running correctly by running the following command:
 
-7. Go to `http(s)://localhost:<host_port>` to verify that everything works (you will need to provide broker certificates with you request in order to see the page)
+   ```
+   curl --location 'https://localhost:443/' --key client.key --cert client-chain.crt --cacert ca.crt
+   ```
+
+   You should received `{"result":"eIDAS broker"}` in response.
 
 ## API specification
 
@@ -269,7 +280,8 @@ read from the file system, which can be changed if necessary by changing corresp
 in the `ServicePlatform` class.
 
 Implementation of secured access to the service (using client TLS certificate verification) relies on
-[nginx](https://nginx.org/). Please refer to [nginx.conf](nginx.conf).
+[nginx](https://nginx.org/). Please refer to [nginx.conf](nginx.conf). *Please notice that this
+configuration uses port 80 for secured connections.*
 
 ### Running service locally without Docker
 
