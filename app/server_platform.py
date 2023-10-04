@@ -1,6 +1,8 @@
 import base64
 import gzip
 import logging
+import zipfile
+from io import BytesIO
 import os
 import ssl
 from typing import Union, Optional
@@ -76,6 +78,16 @@ class ServerPlatform:
             ssl_context = ssl._create_unverified_context()
         return ssl_context
 
+    def _handle_binary_response(self, response: bytes) -> bytes:
+        try:
+            archive = zipfile.ZipFile(BytesIO(response), "r")
+            # assume that there is only one file in the archive
+            logging.debug(f"Archive contains following files: {archive.namelist()}")
+            return archive.read(archive.namelist()[0])
+        except zipfile.BadZipFile:
+            logging.error("Response is not a zip archive")
+            return response
+
     def makeRequest(self, request: ApiRequest, follow_redirects: Optional[bool] = True):
         url = request.origin + request.path
         query = urlencode(_params_to_pairs(request.query))
@@ -101,15 +113,19 @@ class ServerPlatform:
         try:
             with urlopen(req) as f:
                 response_info = f.info()
-                logging.info("%r", response_info.items())
-                encoding = response_info.get("content-encoding", None)
-                if encoding and encoding.lower() == "gzip":
-                    response = gzip.decompress(f.read()).decode("utf-8")
+                logging.debug("%r", response_info.items())
+                content_type = response_info.get("Content-Type")
+                if content_type == "application/octet-stream":
+                    response_bytes = self._handle_binary_response(f.read())
                 else:
-                    response = f.read().decode("utf-8")
-                logging.debug("%d %r", f.status, response)
+                    encoding = response_info.get("content-encoding", None)
+                    if encoding and encoding.lower() == "gzip":
+                        response_bytes = gzip.decompress(f.read()).decode("utf-8")
+                    else:
+                        response_bytes = f.read().decode("utf-8")
+                logging.debug("%d %r", f.status, response_bytes)
                 headers = [(name, value) for name, value in response_info.items()]
-                return {"status": f.status, "response": response, "headers": headers}
+                return {"status": f.status, "response": response_bytes, "headers": headers}
         except HTTPError as e:
             encoding = e.headers["content-encoding"]
             if encoding and encoding.lower() == "gzip":

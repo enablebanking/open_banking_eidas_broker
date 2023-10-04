@@ -8,3 +8,4 @@ eb
 .DS_Store
 /certs
 **/__pycache__
+.env
