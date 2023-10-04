@@ -69,6 +69,46 @@ def test_file_response():
     assert json.loads(response.body) == {"some": "json"}
 
 
+def test_query_parameters():
+    response = utils.make_request(
+        "GET",
+        "https://postman-echo.com",
+        "/get",
+        query=[utils.Pair("foo", "bar")],
+    )
+    logging.info(response.body)
+    assert response.status == 200
+    assert json.loads(response.body)["args"]["foo"] == "bar"
+
+    response = utils.make_request(
+        "GET",
+        "https://postman-echo.com",
+        "/get",
+        query=[utils.Pair("url", "https://example.com")],
+    )
+    logging.info(response.body)
+    assert response.status == 200
+    assert json.loads(response.body)["args"]["url"] == "https://example.com"
+
+    response = utils.make_request(
+        "GET",
+        "https://postman-echo.com",
+        "/get?baz=qux",
+    )
+    logging.info(response.body)
+    assert response.status == 200
+    assert json.loads(response.body)["args"]["baz"] == "qux"
+
+    response = utils.make_request(
+        "GET",
+        "https://postman-echo.com/get?bar=foo",
+        "",
+    )
+    logging.info(response.body)
+    assert response.status == 200
+    assert json.loads(response.body)["args"]["bar"] == "foo"
+
+
 def test_signature():
     payload = "test"
     signature = utils.sign(payload, config.QSEAL_KEY_NAME)
@@ -76,6 +116,10 @@ def test_signature():
     assert utils.verify_signature(signature, payload, config.QSEAL_CERT_PATH)
 
     crypto_algorithm = "PS"
-    signature = utils.sign(payload, config.QSEAL_KEY_NAME, crypto_algorithm=crypto_algorithm)
+    signature = utils.sign(
+        payload, config.QSEAL_KEY_NAME, crypto_algorithm=crypto_algorithm
+    )
     logging.info(signature)
-    assert utils.verify_signature(signature, payload, config.QSEAL_CERT_PATH, crypto_algorithm=crypto_algorithm)
+    assert utils.verify_signature(
+        signature, payload, config.QSEAL_CERT_PATH, crypto_algorithm=crypto_algorithm
+    )
