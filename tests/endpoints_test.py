@@ -3,6 +3,7 @@ import requests
 import logging
 import utils
 import json
+import pytest
 
 
 def test_health():
@@ -123,3 +124,9 @@ def test_signature():
     assert utils.verify_signature(
         signature, payload, config.QSEAL_CERT_PATH, crypto_algorithm=crypto_algorithm
     )
+
+
+def test_timeout():
+    with pytest.raises(Exception) as e:
+        utils.make_request("GET", config.MOCK_ORIGIN, "/timeout")
+        assert "timed out" in str(e)

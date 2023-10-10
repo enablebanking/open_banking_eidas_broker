@@ -38,8 +38,7 @@ def _params_to_pairs(params: list[Pair]) -> list[tuple[str, str]]:
 
 class NoRedirectHandler(HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
-        logging.error("Got redirect")
-        # raise HTTPError(req.full_url, code, msg, headers, fp)
+        logging.debug("Got redirect")
         return None
 
 
@@ -111,7 +110,7 @@ class ServerPlatform:
             )  # so we just create opener with both https and no redirect handler
         install_opener(opener)
         try:
-            with urlopen(req) as f:
+            with urlopen(req, timeout=60) as f:
                 response_info = f.info()
                 logging.debug("%r", response_info.items())
                 content_type = response_info.get("Content-Type")
