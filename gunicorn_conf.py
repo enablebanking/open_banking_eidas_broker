@@ -20,6 +20,9 @@ loglevel = use_loglevel
 workers = web_concurrency
 keepalive = 120
 errorlog = "-"
+# Set timeout to a bigger value than underlying application's timeout
+# to avoid workers from being killed before the application returns a response
+timeout = 300
 
 # For debugging and testing
 log_data = {
@@ -27,5 +30,6 @@ log_data = {
     "workers": workers,
     # Additional, non-gunicorn variables
     "workers_per_core": workers_per_core,
+    "timeout": timeout,
 }
 print(json.dumps(log_data))

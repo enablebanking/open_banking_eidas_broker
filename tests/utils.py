@@ -68,6 +68,7 @@ def make_request(
         json=request_body,
         verify=False,
         cert=(config.MTLS_CLIENT_CERT_PATH, config.MTLS_CLIENT_KEY_PATH),
+        timeout=300
     )
 
     broker_json = broker_response.json()
