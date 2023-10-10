@@ -20,7 +20,7 @@ loglevel = use_loglevel
 workers = web_concurrency
 keepalive = 120
 errorlog = "-"
-# Set timeout to a bigger values than underlying application's timeouts
+# Set timeout to a bigger value than underlying application's timeout
 # to avoid workers from being killed before the application returns a response
 timeout = 300
 
