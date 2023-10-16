@@ -110,12 +110,15 @@ def test_query_parameters():
     assert json.loads(response.body)["args"]["bar"] == "foo"
 
 
-def test_signature():
+def test_rs_signature():
     payload = "test"
     signature = utils.sign(payload, config.QSEAL_KEY_NAME)
     logging.info(signature)
     assert utils.verify_signature(signature, payload, config.QSEAL_CERT_PATH)
 
+
+def test_ps_signature():
+    payload = "test"
     crypto_algorithm = "PS"
     signature = utils.sign(
         payload, config.QSEAL_KEY_NAME, crypto_algorithm=crypto_algorithm
