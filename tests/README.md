@@ -7,8 +7,10 @@ Install dependencies:
 
 Setup following environment variables:  
 BROKER_ORIGIN – origin/url of your broker  
-QSEAL_CERT_PATH – path to public QSeal certificate   
+QSEAL_CERT_PATH – path to a public QSeal certificate   
 QSEAL_KEY_NAME – name of a private key inside the broker  
+QWAC_CERT_NAME – name of a public Qwac inside the broker
+QWAC_KEY_NAME – name of a private Qwac key inside the broker
 MTLS_CLIENT_CERT_PATH - path to client MTLS certificate  
 MTLS_CLIENT_KEY_PATH - path to client MTLS private key  
 
