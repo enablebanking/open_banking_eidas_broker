@@ -30,6 +30,17 @@ def test_regular_request():
     assert response.body == '{"message":"Hello World"}'
 
 
+def test_request_with_tls():
+    response = utils.make_request(
+        "GET",
+        config.MOCK_ORIGIN,
+        "/redirect",
+        tls=utils.TLS(config.QWAC_CERT_NAME, config.QWAC_KEY_NAME),
+    )
+    logging.info(response.body)
+    assert response.status == 200
+
+
 def test_follow_redirects():
     response = utils.make_request(
         "GET", config.MOCK_ORIGIN, "/redirect", follow_redirects=True

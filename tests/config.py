@@ -5,7 +5,9 @@ if not broker_origin:
     raise ValueError("BROKER_ORIGIN environment variable must be set")
 BROKER_ORIGIN = broker_origin
 
-MOCK_ORIGIN = os.environ.get("MOCK_ORIGIN", "https://eidas-mock-todjdqftaa-ez.a.run.app")
+MOCK_ORIGIN = os.environ.get(
+    "MOCK_ORIGIN", "https://eidas-mock-todjdqftaa-ez.a.run.app"
+)
 mtls_client_cert_path = os.environ.get("MTLS_CLIENT_CERT_PATH", None)
 if not mtls_client_cert_path:
     raise ValueError("MTLS_CLIENT_CERT_PATH environment variable must be set")
@@ -23,3 +25,12 @@ qseal_key_name = os.environ.get("QSEAL_KEY_NAME", None)
 if not qseal_key_name:
     raise ValueError("QSEAL_KEY_NAME environment variable must be set")
 QSEAL_KEY_NAME = qseal_key_name
+
+qwac_cert_name = os.environ.get("QWAC_CERT_NAME", None)
+if not qwac_cert_name:
+    raise ValueError("QWAC_CERT_NAME environment variable must be set")
+QWAC_CERT_NAME = qwac_cert_name
+qwac_key_name = os.environ.get("QWAC_KEY_NAME", None)
+if not qwac_key_name:
+    raise ValueError("QWAC_KEY_NAME environment variable must be set")
+QWAC_KEY_NAME = qwac_key_name
