@@ -20,13 +20,8 @@ from urllib.request import (
 
 from cryptography.utils import int_to_bytes
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.backends.openssl.backend import Backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec, padding
-from cryptography.hazmat.primitives.asymmetric.types import (
-    PrivateKeyTypes,
-    PublicKeyTypes,
-)
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
 
@@ -47,18 +42,18 @@ class NoRedirectHandler(HTTPRedirectHandler):
         return None
 
 
-# For the future: extend this class from enablebanking's platform
 class ServerPlatform:
     OB_CERTS_DIR = os.environ.get("OB_CERTS_DIR", "/app/open_banking_certs")
 
+    hazmat_backend = default_backend()
+
     def get_ssl_context(self, tls: TLS | None) -> ssl.SSLContext:
         if tls:
-            self.update_tls_paths(tls)
             ssl_context = ssl.create_default_context()
             ssl_context.load_cert_chain(
                 os.path.join(self.OB_CERTS_DIR, tls.cert_path),
                 os.path.join(self.OB_CERTS_DIR, tls.key_path),
-                lambda: _read_key_password(_tls.key_path)
+                lambda: _read_key_password(tls.key_path)
             )
             if tls.ca_cert_path:
                 ssl_context.load_verify_locations(os.path.join(self.OB_CERTS_DIR, tls.ca_cert_path))
@@ -151,27 +146,6 @@ class ServerPlatform:
             return value.encode("utf-8")
         return value
 
-    def _prepare_key(self, key: bytes, password: str | None = None) -> PrivateKeyTypes:
-        """Create a key out of .pem key
-
-        Arguments:
-            key {String, Bytes} -- Private/Public key value
-
-        Keyword Arguments:
-            password {String} -- Password to a private key (default: {None})
-
-        Raises:
-            TypeError: If wrong value is provided for a key
-
-        Returns:
-            cryptography.hazmat.backends.openssl.rsa._RSAPrivateKey -- Private key class instance
-        """
-        key = self._force_bytes(key)
-
-        backend: Backend = default_backend()
-
-        return backend.load_pem_private_key(key, password, True)
-
     @staticmethod
     def _decode_signature(signature: bytes, hash_algorithm: str) -> bytes:
         hash_algorithms_map = {"SHA256": 256}
@@ -215,9 +189,10 @@ class ServerPlatform:
             )
 
         data = self._force_bytes(data)
-        key = self._prepare_key(
+        key = self.hazmat_backend.load_pem_private_key(
             open(os.path.join(self.OB_CERTS_DIR, key_path), "rb").read(),
-            _read_key_password(key_path)
+            _read_key_password(key_path).encode("utf-8"),
+            True
         )
         signature = b""
         if isinstance(key, RSAPrivateKey):
