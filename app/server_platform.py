@@ -4,6 +4,7 @@ import logging
 import zipfile
 from io import BytesIO
 import os
+import re
 import ssl
 from typing import Union, Optional
 from urllib.error import HTTPError
@@ -36,6 +37,10 @@ def _params_to_pairs(params: list[Pair]) -> list[tuple[str, str]]:
     return [(param.name, param.value) for param in params] if params else []
 
 
+def _read_key_password(key_path: str) -> str | None:
+    return os.environ.get(re.sub("[\-\.\/]", "_", key_path).upper() + "_PASSWORD")
+
+
 class NoRedirectHandler(HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         logging.debug("Got redirect")
@@ -44,25 +49,19 @@ class NoRedirectHandler(HTTPRedirectHandler):
 
 # For the future: extend this class from enablebanking's platform
 class ServerPlatform:
-    PATH_PREFIX = "/app/open_banking_certs/"
-
-    def update_tls_paths(self, tls: TLS):
-        fields = ["cert_path", "key_path", "ca_cert_path"]
-        for field in fields:
-            if hasattr(tls, field):
-                field_value = getattr(tls, field)
-                if field_value and not field_value.startswith(self.PATH_PREFIX):
-                    setattr(tls, field, self.PATH_PREFIX + field_value)
+    OB_CERTS_DIR = os.environ.get("OB_CERTS_DIR", "/app/open_banking_certs")
 
     def get_ssl_context(self, tls: TLS | None) -> ssl.SSLContext:
         if tls:
             self.update_tls_paths(tls)
             ssl_context = ssl.create_default_context()
             ssl_context.load_cert_chain(
-                tls.cert_path, tls.key_path, lambda: tls.key_password
+                os.path.join(self.OB_CERTS_DIR, tls.cert_path),
+                os.path.join(self.OB_CERTS_DIR, tls.key_path),
+                lambda: _read_key_password(_tls.key_path)
             )
             if tls.ca_cert_path:
-                ssl_context.load_verify_locations(tls.ca_cert_path)
+                ssl_context.load_verify_locations(os.path.join(self.OB_CERTS_DIR, tls.ca_cert_path))
 
             if os.getenv("verify_cert", False):
                 if not tls.ca_cert_path:
@@ -152,7 +151,7 @@ class ServerPlatform:
             return value.encode("utf-8")
         return value
 
-    def _prepare_key(self, key: bytes) -> PrivateKeyTypes | PublicKeyTypes:
+    def _prepare_key(self, key: bytes, password: str | None = None) -> PrivateKeyTypes:
         """Create a key out of .pem key
 
         Arguments:
@@ -170,13 +169,8 @@ class ServerPlatform:
         key = self._force_bytes(key)
 
         backend: Backend = default_backend()
-        key_obj: PrivateKeyTypes | PublicKeyTypes
-        try:
-            key_obj = backend.load_pem_private_key(key, None, True)
-        except ValueError:
-            key_obj = backend.load_pem_public_key(key)
 
-        return key_obj
+        return backend.load_pem_private_key(key, password, True)
 
     @staticmethod
     def _decode_signature(signature: bytes, hash_algorithm: str) -> bytes:
@@ -209,8 +203,6 @@ class ServerPlatform:
         Returns:
             String -- Base64 encoded signed with a private key string
         """
-        if not key_path.startswith(self.PATH_PREFIX):
-            key_path = self.PATH_PREFIX + key_path
         if hash_algorithm is None:
             hash_algorithm = "SHA256"
         hash_algorithm = hash_algorithm.upper()
@@ -223,7 +215,10 @@ class ServerPlatform:
             )
 
         data = self._force_bytes(data)
-        key = self._prepare_key(open(key_path, "rb").read())
+        key = self._prepare_key(
+            open(os.path.join(self.OB_CERTS_DIR, key_path), "rb").read(),
+            _read_key_password(key_path)
+        )
         signature = b""
         if isinstance(key, RSAPrivateKey):
             if crypto_algorithm and crypto_algorithm == "PS":

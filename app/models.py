@@ -48,7 +48,6 @@ class TLS(BaseModel):
     cert_path: str
     key_path: str
     ca_cert_path: str | None = None
-    key_password: str | None = None
 
 
 class MakeRequestParams(BaseModel):
