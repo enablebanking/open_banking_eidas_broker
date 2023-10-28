@@ -191,7 +191,7 @@ class ServerPlatform:
         data = self._force_bytes(data)
         key = self.hazmat_backend.load_pem_private_key(
             open(os.path.join(self.OB_CERTS_DIR, key_path), "rb").read(),
-            _read_key_password(key_path).encode("utf-8"),
+            (lambda p: p.encode("utf-8") if p is not None else None)(_read_key_password(key_path)),
             True
         )
         signature = b""
