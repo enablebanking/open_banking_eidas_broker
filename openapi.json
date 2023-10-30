@@ -417,10 +417,6 @@
                     "ca_cert_path": {
                         "title": "Ca Cert Path",
                         "type": "string"
-                    },
-                    "key_password": {
-                        "title": "Key Password",
-                        "type": "string"
                     }
                 }
             },

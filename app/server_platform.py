@@ -4,6 +4,7 @@ import logging
 import zipfile
 from io import BytesIO
 import os
+import re
 import ssl
 from typing import Union, Optional
 from urllib.error import HTTPError
@@ -19,13 +20,8 @@ from urllib.request import (
 
 from cryptography.utils import int_to_bytes
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.backends.openssl.backend import Backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec, padding
-from cryptography.hazmat.primitives.asymmetric.types import (
-    PrivateKeyTypes,
-    PublicKeyTypes,
-)
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
 
@@ -36,33 +32,37 @@ def _params_to_pairs(params: list[Pair]) -> list[tuple[str, str]]:
     return [(param.name, param.value) for param in params] if params else []
 
 
+def _read_key_password(key_path: str) -> str | None:
+    return os.environ.get(re.sub("[\-\.\/]", "_", key_path).upper() + "_PASSWORD")
+
+
 class NoRedirectHandler(HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         logging.debug("Got redirect")
         return None
 
 
-# For the future: extend this class from enablebanking's platform
 class ServerPlatform:
-    PATH_PREFIX = "/app/open_banking_certs/"
+    OB_CERTS_DIR = os.path.abspath(os.environ.get("OB_CERTS_DIR", "/app/open_banking_certs"))
 
-    def update_tls_paths(self, tls: TLS):
-        fields = ["cert_path", "key_path", "ca_cert_path"]
-        for field in fields:
-            if hasattr(tls, field):
-                field_value = getattr(tls, field)
-                if field_value and not field_value.startswith(self.PATH_PREFIX):
-                    setattr(tls, field, self.PATH_PREFIX + field_value)
+    hazmat_backend = default_backend()
+
+    def _get_ob_certs_file_path(self, path: str) -> str:
+        abspath = os.path.abspath(os.path.join(self.OB_CERTS_DIR, path))
+        if os.path.commonpath([self.OB_CERTS_DIR, abspath]) != self.OB_CERTS_DIR:
+            raise ValueError(f"{path} is not inside open banking certificates directory")
+        return abspath
 
     def get_ssl_context(self, tls: TLS | None) -> ssl.SSLContext:
         if tls:
-            self.update_tls_paths(tls)
             ssl_context = ssl.create_default_context()
             ssl_context.load_cert_chain(
-                tls.cert_path, tls.key_path, lambda: tls.key_password
+                self._get_ob_certs_file_path(tls.cert_path),
+                self._get_ob_certs_file_path(tls.key_path),
+                lambda: _read_key_password(tls.key_path)
             )
             if tls.ca_cert_path:
-                ssl_context.load_verify_locations(tls.ca_cert_path)
+                ssl_context.load_verify_locations(self._get_ob_certs_file_path(tls.ca_cert_path))
 
             if os.getenv("verify_cert", False):
                 if not tls.ca_cert_path:
@@ -152,32 +152,6 @@ class ServerPlatform:
             return value.encode("utf-8")
         return value
 
-    def _prepare_key(self, key: bytes) -> PrivateKeyTypes | PublicKeyTypes:
-        """Create a key out of .pem key
-
-        Arguments:
-            key {String, Bytes} -- Private/Public key value
-
-        Keyword Arguments:
-            password {String} -- Password to a private key (default: {None})
-
-        Raises:
-            TypeError: If wrong value is provided for a key
-
-        Returns:
-            cryptography.hazmat.backends.openssl.rsa._RSAPrivateKey -- Private key class instance
-        """
-        key = self._force_bytes(key)
-
-        backend: Backend = default_backend()
-        key_obj: PrivateKeyTypes | PublicKeyTypes
-        try:
-            key_obj = backend.load_pem_private_key(key, None, True)
-        except ValueError:
-            key_obj = backend.load_pem_public_key(key)
-
-        return key_obj
-
     @staticmethod
     def _decode_signature(signature: bytes, hash_algorithm: str) -> bytes:
         hash_algorithms_map = {"SHA256": 256}
@@ -209,8 +183,6 @@ class ServerPlatform:
         Returns:
             String -- Base64 encoded signed with a private key string
         """
-        if not key_path.startswith(self.PATH_PREFIX):
-            key_path = self.PATH_PREFIX + key_path
         if hash_algorithm is None:
             hash_algorithm = "SHA256"
         hash_algorithm = hash_algorithm.upper()
@@ -223,7 +195,11 @@ class ServerPlatform:
             )
 
         data = self._force_bytes(data)
-        key = self._prepare_key(open(key_path, "rb").read())
+        key = self.hazmat_backend.load_pem_private_key(
+            open(self._get_ob_certs_file_path(key_path), "rb").read(),
+            (lambda p: p.encode("utf-8") if p is not None else None)(_read_key_password(key_path)),
+            True
+        )
         signature = b""
         if isinstance(key, RSAPrivateKey):
             if crypto_algorithm and crypto_algorithm == "PS":

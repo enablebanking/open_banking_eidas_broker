@@ -148,12 +148,12 @@ openssl verify -purpose sslclient -CAfile ca.crt client.crt
 In order to build an image you need to:
 
 1. Have docker installed
-2. Put broker certificates you generated earlier into `server_certs/` directory under following names:
+2. Go to the directory with `Dockerfile`
+3. Run `docker build -t <image_name> .` (probably you need to prepend this command with `sudo`)
+4. Put broker certificates you generated earlier into `broker_tls/` directory under following names:
     - `server.key`  # private key of the server (broker) certificate
     - `server.crt`  # public server (broker) certificate
     - `ca.crt`  # public CA certificate
-3. Go to the directory with `Dockerfile`
-4. Run `docker build -t <image_name> .` (probably you need to prepend this command with `sudo`)
 5. Put your eIDAS certificates and their private keys, which will be used when accessing ASPSPs' APIs,
    i.e. QWAC (mTLS) and QSealC (signature) into `open_banking_certs/` directory, which will be mounted
    to the container.
@@ -167,14 +167,20 @@ In order to build an image you need to:
     - `qwac.crt`  # QWAC public certificate. Needed for establishing mTLS
     - `qwac_chain.crt` (optional)  # QWAC certificate chain. Some ASPSPs require it
     - `qsealc.key`  # QSealC private key. Used for creating signatures
-6. Start built image:  
+
+   If private keys are encrypted, it is possible to provide passwords for decrypting the keys by
+   setting environment variables that contain the passwords. Environment variables should be named
+   after the key file names, with special characters replaced by underscore symbols, and suffixed with
+   `_PASSWORD`. For example, the password for `qwac.key` should be set in the environment variable
+   named `QWAC_KEY_PASSWORD`.
+6. Start built image:
 
    ```
    docker run -d \
        --name <container_name> \
        -p 443:80 \
        --mount type=bind,source="$(pwd)"/open_banking_certs/,target=/app/open_banking_certs/ \
-       --mount type=bind,source="$(pwd)"/server_certs/,target=/app/broker_tls/ \
+       --mount type=bind,source="$(pwd)"/broker_tls/,target=/app/broker_tls/ \
        <image_name>
    ```
 
