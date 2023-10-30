@@ -43,20 +43,26 @@ class NoRedirectHandler(HTTPRedirectHandler):
 
 
 class ServerPlatform:
-    OB_CERTS_DIR = os.environ.get("OB_CERTS_DIR", "/app/open_banking_certs")
+    OB_CERTS_DIR = os.path.abspath(os.environ.get("OB_CERTS_DIR", "/app/open_banking_certs"))
 
     hazmat_backend = default_backend()
+
+    def _get_ob_certs_file_path(self, path: str) -> str:
+        abspath = os.path.abspath(os.path.join(self.OB_CERTS_DIR, path))
+        if os.path.commonpath([self.OB_CERTS_DIR, abspath]) != self.OB_CERTS_DIR:
+            raise ValueError(f"{path} is not inside open banking certificates directory")
+        return abspath
 
     def get_ssl_context(self, tls: TLS | None) -> ssl.SSLContext:
         if tls:
             ssl_context = ssl.create_default_context()
             ssl_context.load_cert_chain(
-                os.path.join(self.OB_CERTS_DIR, tls.cert_path),
-                os.path.join(self.OB_CERTS_DIR, tls.key_path),
+                self._get_ob_certs_file_path(tls.cert_path),
+                self._get_ob_certs_file_path(tls.key_path),
                 lambda: _read_key_password(tls.key_path)
             )
             if tls.ca_cert_path:
-                ssl_context.load_verify_locations(os.path.join(self.OB_CERTS_DIR, tls.ca_cert_path))
+                ssl_context.load_verify_locations(self._get_ob_certs_file_path(tls.ca_cert_path))
 
             if os.getenv("verify_cert", False):
                 if not tls.ca_cert_path:
@@ -190,7 +196,7 @@ class ServerPlatform:
 
         data = self._force_bytes(data)
         key = self.hazmat_backend.load_pem_private_key(
-            open(os.path.join(self.OB_CERTS_DIR, key_path), "rb").read(),
+            open(self._get_ob_certs_file_path(key_path), "rb").read(),
             (lambda p: p.encode("utf-8") if p is not None else None)(_read_key_password(key_path)),
             True
         )
