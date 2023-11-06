@@ -37,13 +37,12 @@ async def read_root():
     response_model=models.SignResponse,
 )
 async def sign(request: models.SignRequest):
-    sign_params: models.SignParams = request.params
     return {
-        "result": platform.signWithKey(
-            sign_params.data,
-            sign_params.key_id,
-            hash_algorithm=sign_params.hash_algorithm,
-            crypto_algorithm=sign_params.crypto_algorithm,
+        "result": await platform.signWithKey(
+            request.params.data,
+            request.params.key_id,
+            hash_algorithm=request.params.hash_algorithm,
+            crypto_algorithm=request.params.crypto_algorithm,
         )
     }
 
@@ -54,27 +53,10 @@ async def sign(request: models.SignRequest):
     response_model=models.MakeRequestResponse,
 )
 async def make_request(request: models.MakeRequestRequest):
-    make_request_data = request.params
-    make_request_params = make_request_data.request
-    query = None
-    if make_request_params.query:
-        query = [models.Pair(name, value) for name, value in make_request_params.query]
-    headers = None
-    if make_request_params.headers:
-        headers = [
-            models.Pair(name, value) for name, value in make_request_params.headers
-        ]
-    api_request = models.ApiRequest(
-        make_request_params.method,
-        make_request_params.origin,
-        make_request_params.path,
-        headers=headers,
-        query=query,
-        body=make_request_params.body,
-        tls=make_request_params.tls,
-    )
     return {
-        "result": platform.makeRequest(api_request, make_request_data.follow_redirects)
+        "result": await platform.makeRequest(
+            request.params.request, request.params.follow_redirects
+        )
     }
 
 

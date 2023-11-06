@@ -1,16 +1,11 @@
 from enum import Enum
+from typing import Any
 
-from typing import NamedTuple
 from pydantic import BaseModel, Field
 
 
-class Pair(NamedTuple):
-    name: str
-    value: str
-
-
 class BaseRequest(BaseModel):
-    params: BaseModel
+    params: Any
 
 
 class HashAlgorithm(str, Enum):
@@ -84,28 +79,6 @@ class MakeRequestData(BaseModel):
 
 class MakeRequestRequest(BaseRequest):
     params: MakeRequestData
-
-
-class ApiRequest:
-    def __init__(
-        self,
-        method: str,
-        origin: str,
-        path: str,
-        headers: list[Pair] | None = None,
-        query: list[Pair] | None = None,
-        body: str | None = None,
-        tls: TLS | None = None,
-    ):
-        if body is None:
-            body = ""
-        self.method = method
-        self.origin = origin
-        self.path = path
-        self.headers = headers if ((headers is not None)) else []
-        self.query = query if ((query is not None)) else []
-        self.body = body
-        self.tls = tls
 
 
 class MakeRequestResponseResult(BaseModel):
