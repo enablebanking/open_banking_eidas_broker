@@ -7,7 +7,6 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 COPY ./app /app
 COPY certs/server/* /app/broker_tls/
-COPY gunicorn_conf.py /gunicorn_conf.py
 
 COPY run.sh .
 RUN chmod +x run.sh
