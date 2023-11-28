@@ -1,5 +1,5 @@
+import aiohttp
 import base64
-import gzip
 import logging
 import zipfile
 from io import BytesIO
@@ -7,16 +7,6 @@ import os
 import re
 import ssl
 from typing import Union, Optional
-from urllib.error import HTTPError
-from urllib.parse import urlencode
-from urllib.request import (
-    Request,
-    urlopen,
-    build_opener,
-    install_opener,
-    HTTPRedirectHandler,
-    HTTPSHandler,
-)
 
 from cryptography.utils import int_to_bytes
 from cryptography.hazmat.backends import default_backend
@@ -25,32 +15,26 @@ from cryptography.hazmat.primitives.asymmetric import ec, padding
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
 
-from models import Pair, TLS, ApiRequest
-
-
-def _params_to_pairs(params: list[Pair]) -> list[tuple[str, str]]:
-    return [(param.name, param.value) for param in params] if params else []
+from models import TLS, MakeRequestParams
 
 
 def _read_key_password(key_path: str) -> str | None:
-    return os.environ.get(re.sub("[\-\.\/]", "_", key_path).upper() + "_PASSWORD")
-
-
-class NoRedirectHandler(HTTPRedirectHandler):
-    def redirect_request(self, req, fp, code, msg, headers, newurl):
-        logging.debug("Got redirect")
-        return None
+    return os.environ.get(re.sub(r"[\-\.\/]", "_", key_path).upper() + "_PASSWORD")
 
 
 class ServerPlatform:
-    OB_CERTS_DIR = os.path.abspath(os.environ.get("OB_CERTS_DIR", "/app/open_banking_certs"))
+    OB_CERTS_DIR = os.path.abspath(
+        os.environ.get("OB_CERTS_DIR", "/app/open_banking_certs")
+    )
 
     hazmat_backend = default_backend()
 
     def _get_ob_certs_file_path(self, path: str) -> str:
         abspath = os.path.abspath(os.path.join(self.OB_CERTS_DIR, path))
         if os.path.commonpath([self.OB_CERTS_DIR, abspath]) != self.OB_CERTS_DIR:
-            raise ValueError(f"{path} is not inside open banking certificates directory")
+            raise ValueError(
+                f"{path} is not inside open banking certificates directory"
+            )
         return abspath
 
     def get_ssl_context(self, tls: TLS | None) -> ssl.SSLContext:
@@ -59,10 +43,12 @@ class ServerPlatform:
             ssl_context.load_cert_chain(
                 self._get_ob_certs_file_path(tls.cert_path),
                 self._get_ob_certs_file_path(tls.key_path),
-                lambda: _read_key_password(tls.key_path)
+                lambda: _read_key_password(tls.key_path),
             )
             if tls.ca_cert_path:
-                ssl_context.load_verify_locations(self._get_ob_certs_file_path(tls.ca_cert_path))
+                ssl_context.load_verify_locations(
+                    self._get_ob_certs_file_path(tls.ca_cert_path)
+                )
 
             if os.getenv("verify_cert", False):
                 if not tls.ca_cert_path:
@@ -87,53 +73,62 @@ class ServerPlatform:
             logging.error("Response is not a zip archive")
             return response
 
-    def makeRequest(self, request: ApiRequest, follow_redirects: Optional[bool] = True):
+    async def makeRequest(
+        self, request: MakeRequestParams, follow_redirects: Optional[bool] = True
+    ):
         url = request.origin + request.path
-        query = urlencode(_params_to_pairs(request.query))
         data = request.body.encode()
-        headers = dict((a, b) for a, b in _params_to_pairs(request.headers))
-        if query:
-            url += "?" + query
+        request_headers = dict(request.headers)
         logging.debug(
-            "Request(%r, %r, headers=%r, method=%r)", url, data, headers, request.method
+            "Request(%r, %r, params=%r, headers=%r, method=%r)",
+            url,
+            data,
+            request.query,
+            request_headers,
+            request.method,
         )
-        req = Request(url, data=data, headers=headers, method=request.method)
         ssl_context = self.get_ssl_context(request.tls)
-        https_opener = HTTPSHandler(
-            context=ssl_context
-        )  # for some reason urllib cant install your custom redirect opener if you have ssl context
-        if follow_redirects:
-            opener = build_opener(https_opener)
-        else:
-            opener = build_opener(
-                https_opener, NoRedirectHandler
-            )  # so we just create opener with both https and no redirect handler
-        install_opener(opener)
         try:
-            with urlopen(req, timeout=60) as f:
-                response_info = f.info()
-                logging.debug("%r", response_info.items())
-                content_type = response_info.get("Content-Type")
-                if content_type == "application/octet-stream":
-                    response_bytes = self._handle_binary_response(f.read())
-                else:
-                    encoding = response_info.get("content-encoding", None)
-                    if encoding and encoding.lower() == "gzip":
-                        response_bytes = gzip.decompress(f.read()).decode("utf-8")
+            async with aiohttp.ClientSession(
+                timeout=aiohttp.ClientTimeout(total=60.0)
+            ) as session:
+                async with session.request(
+                    method=request.method,
+                    url=url,
+                    params=request.query,
+                    data=data,
+                    headers=request_headers,
+                    ssl=ssl_context,
+                    allow_redirects=follow_redirects,
+                ) as response:
+                    if (
+                        response.headers.get("Content-Type")
+                        == "application/octet-stream"
+                    ):
+                        response_text = self._handle_binary_response(
+                            await response.read()
+                        ).decode("utf-8")
                     else:
-                        response_bytes = f.read().decode("utf-8")
-                logging.debug("%d %r", f.status, response_bytes)
-                headers = [(name, value) for name, value in response_info.items()]
-                return {"status": f.status, "response": response_bytes, "headers": headers}
-        except HTTPError as e:
-            encoding = e.headers["content-encoding"]
-            if encoding and encoding.lower() == "gzip":
-                response = gzip.decompress(e.fp.read()).decode("utf-8")
-            else:
-                response = e.fp.read().decode("utf-8")
-            logging.error("%d %r", e.status, response)
-            headers = [(name, value) for name, value in e.headers.items()]
-            return {"status": e.status, "response": response, "headers": headers}
+                        response_text = await response.text()
+                    response_headers = [
+                        (name, value) for name, value in response.headers.items()
+                    ]
+                    return {
+                        "status": response.status,
+                        "response": response_text,
+                        "headers": response_headers,
+                    }
+        except aiohttp.ClientResponseError as e:
+            response_headers = (
+                [(name, value) for name, value in e.headers.items()]
+                if e.headers
+                else []
+            )
+            return {
+                "status": e.status,
+                "response": e.message,
+                "headers": response_headers,
+            }
 
     @staticmethod
     def _force_bytes(value: str | bytes) -> bytes:
@@ -165,7 +160,7 @@ class ServerPlatform:
         r, s = decode_dss_signature(signature)
         return int_to_bytes(r, num_bytes) + int_to_bytes(s, num_bytes)
 
-    def signWithKey(
+    async def signWithKey(
         self,
         data: Union[str, bytes],
         key_path: str,
@@ -197,8 +192,10 @@ class ServerPlatform:
         data = self._force_bytes(data)
         key = self.hazmat_backend.load_pem_private_key(
             open(self._get_ob_certs_file_path(key_path), "rb").read(),
-            (lambda p: p.encode("utf-8") if p is not None else None)(_read_key_password(key_path)),
-            True
+            (lambda p: p.encode("utf-8") if p is not None else None)(
+                _read_key_password(key_path)
+            ),
+            True,
         )
         signature = b""
         if isinstance(key, RSAPrivateKey):

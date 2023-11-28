@@ -1,2 +1,3 @@
-gunicorn app.main:app -c /gunicorn_conf.py -k uvicorn.workers.UvicornWorker --bind=unix:server.sock --chdir=/app &
+cd /app
+uvicorn main:app --uds=server.sock &
 nginx -g "daemon off;"
