@@ -78,6 +78,7 @@ def test_file_response():
     response = utils.make_request("GET", config.MOCK_ORIGIN, "/file")
     logging.info(response.body)
     assert response.status == 200
+    assert json.loads(response.body)
 
 
 def test_query_parameters():
