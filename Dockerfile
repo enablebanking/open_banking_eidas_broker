@@ -9,6 +9,7 @@ COPY ./app /app
 COPY certs/server/* /app/broker_tls/
 
 COPY run.sh .
+COPY run.py .
 RUN chmod +x run.sh
 COPY nginx.conf /etc/nginx/sites-available/default
 
