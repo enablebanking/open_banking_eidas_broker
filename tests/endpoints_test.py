@@ -1,9 +1,11 @@
-import config
-import requests
 import logging
-import utils
 import json
+
+import requests
 import pytest
+
+import config
+import utils
 
 
 def test_health():
@@ -144,3 +146,21 @@ def test_timeout():
     with pytest.raises(Exception) as e:
         utils.make_request("GET", config.MOCK_ORIGIN, "/timeout")
         assert "timed out" in str(e)
+
+
+def test_header_encoding():
+    headers = {
+        "unescaped": "Serviços de Certificação Electrónica S.A.",
+        "escaped": "Servi\\C3\\A7os de Certifica\\C3\\A7\\C3\\A3o Electr\\C3\\B3nica S.A.",
+    }
+    response = utils.make_request(
+        "GET",
+        "https://postman-echo.com",
+        "/get",
+        headers=[utils.Pair(k, v) for k, v in headers.items()],
+    )
+    assert response.status == 200
+    logging.info(response.body)
+    json_body = json.loads(response.body)
+    assert json_body["headers"]["unescaped"] == headers["unescaped"]
+    assert json_body["headers"]["escaped"] == headers["escaped"]

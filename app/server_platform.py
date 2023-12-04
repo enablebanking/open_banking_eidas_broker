@@ -1,5 +1,10 @@
 import aiohttp
+from aiohttp import ClientRequest, ClientResponse, helpers, hdrs
+from aiohttp.connector import Connection
+from aiohttp.http_writer import HttpVersion10, HttpVersion11
+from aiohttp.http import StreamWriter
 import base64
+import functools
 import logging
 import zipfile
 from io import BytesIO
@@ -7,6 +12,7 @@ import os
 import re
 import ssl
 from typing import Union, Optional
+from multidict import CIMultiDict
 
 from cryptography.utils import int_to_bytes
 from cryptography.hazmat.backends import default_backend
@@ -20,6 +26,117 @@ from models import TLS, MakeRequestParams
 
 def _read_key_password(key_path: str) -> str | None:
     return os.environ.get(re.sub(r"[\-\.\/]", "_", key_path).upper() + "_PASSWORD")
+
+
+def _safe_header(string: str) -> str:
+    if "\r" in string or "\n" in string:
+        raise ValueError(
+            "Newline or carriage return detected in headers. "
+            "Potential header injection attack."
+        )
+    return string
+
+
+def _py_serialize_headers(status_line: str, headers: "CIMultiDict[str]") -> bytes:
+    headers_gen = (_safe_header(k) + ": " + _safe_header(v) for k, v in headers.items())
+    line = status_line + "\r\n" + "\r\n".join(headers_gen) + "\r\n\r\n"
+    return line.encode("latin-1")
+
+
+class Latin1HeadersStreamWriter(StreamWriter):
+    async def write_headers(
+        self, status_line: str, headers: "CIMultiDict[str]"
+    ) -> None:
+        """Write request/response status and headers."""
+        if self._on_headers_sent is not None:
+            await self._on_headers_sent(headers)
+
+        # status + headers
+        buf = _py_serialize_headers(status_line, headers)
+        self._write(buf)
+
+
+class Latin1HeadersClientRequest(ClientRequest):
+    async def send(self, conn: "Connection") -> "ClientResponse":
+        # Specify request target:
+        # - CONNECT request must send authority form URI
+        # - not CONNECT proxy must send absolute form URI
+        # - most common is origin form URI
+        if self.method == hdrs.METH_CONNECT:
+            connect_host = self.url.raw_host
+            assert connect_host is not None
+            if helpers.is_ipv6_address(connect_host):
+                connect_host = f"[{connect_host}]"
+            path = f"{connect_host}:{self.url.port}"
+        elif self.proxy and not self.is_ssl():
+            path = str(self.url)
+        else:
+            path = self.url.raw_path
+            if self.url.raw_query_string:
+                path += "?" + self.url.raw_query_string
+
+        protocol = conn.protocol
+        assert protocol is not None
+        writer = Latin1HeadersStreamWriter(
+            protocol,
+            self.loop,
+            on_chunk_sent=functools.partial(
+                self._on_chunk_request_sent, self.method, self.url
+            ),
+            on_headers_sent=functools.partial(
+                self._on_headers_request_sent, self.method, self.url
+            ),
+        )
+
+        if self.compress:
+            writer.enable_compression(self.compress)
+
+        if self.chunked is not None:
+            writer.enable_chunking()
+
+        # set default content-type
+        if (
+            self.method in self.POST_METHODS
+            and hdrs.CONTENT_TYPE not in self.skip_auto_headers
+            and hdrs.CONTENT_TYPE not in self.headers
+        ):
+            self.headers[hdrs.CONTENT_TYPE] = "application/octet-stream"
+
+        # set the connection header
+        connection = self.headers.get(hdrs.CONNECTION)
+        if not connection:
+            if self.keep_alive():
+                if self.version == HttpVersion10:
+                    connection = "keep-alive"
+            else:
+                if self.version == HttpVersion11:
+                    connection = "close"
+
+        if connection is not None:
+            self.headers[hdrs.CONNECTION] = connection
+
+        # status + headers
+        status_line = "{0} {1} HTTP/{2[0]}.{2[1]}".format(
+            self.method, path, self.version
+        )
+        await writer.write_headers(status_line, self.headers)
+
+        self._writer = self.loop.create_task(self.write_bytes(writer, conn))
+
+        response_class = self.response_class
+        assert response_class is not None
+        self.response = response_class(
+            self.method,
+            self.original_url,
+            writer=self._writer,
+            continue100=self._continue,
+            timer=self._timer,
+            request_info=self.request_info,
+            traces=self._traces,
+            loop=self.loop,
+            session=self._session,
+        )
+        return self.response
 
 
 class ServerPlatform:
@@ -90,7 +207,8 @@ class ServerPlatform:
         ssl_context = self.get_ssl_context(request.tls)
         try:
             async with aiohttp.ClientSession(
-                timeout=aiohttp.ClientTimeout(total=60.0)
+                timeout=aiohttp.ClientTimeout(total=60.0),
+                request_class=Latin1HeadersClientRequest,
             ) as session:
                 async with session.request(
                     method=request.method,
