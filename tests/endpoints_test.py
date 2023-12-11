@@ -129,6 +129,15 @@ def test_rs_signature():
     logging.info(signature)
     assert utils.verify_signature(signature, payload, config.QSEAL_CERT_PATH)
 
+    hash_algorithm = "SHA512"
+    signature = utils.sign(
+        payload, config.QSEAL_KEY_NAME, hash_algorithm=hash_algorithm
+    )
+    logging.info(signature)
+    assert utils.verify_signature(
+        signature, payload, config.QSEAL_CERT_PATH, hash_algorithm=hash_algorithm
+    )
+
 
 def test_ps_signature():
     payload = "test"
@@ -139,6 +148,22 @@ def test_ps_signature():
     logging.info(signature)
     assert utils.verify_signature(
         signature, payload, config.QSEAL_CERT_PATH, crypto_algorithm=crypto_algorithm
+    )
+
+    hash_algorithm = "SHA512"
+    signature = utils.sign(
+        payload,
+        config.QSEAL_KEY_NAME,
+        hash_algorithm=hash_algorithm,
+        crypto_algorithm=crypto_algorithm,
+    )
+    logging.info(signature)
+    assert utils.verify_signature(
+        signature,
+        payload,
+        config.QSEAL_CERT_PATH,
+        hash_algorithm=hash_algorithm,
+        crypto_algorithm=crypto_algorithm,
     )
 
 
