@@ -11,7 +11,7 @@ from io import BytesIO
 import os
 import re
 import ssl
-from typing import Union, Optional
+from typing import Union
 from multidict import CIMultiDict
 
 from cryptography.utils import int_to_bytes
@@ -191,7 +191,7 @@ class ServerPlatform:
             return response
 
     async def makeRequest(
-        self, request: MakeRequestParams, follow_redirects: Optional[bool] = True
+        self, request: MakeRequestParams, follow_redirects: bool | None = True
     ):
         url = request.origin + request.path
         data = request.body.encode()
@@ -282,8 +282,8 @@ class ServerPlatform:
         self,
         data: Union[str, bytes],
         key_path: str,
-        hash_algorithm: Optional[str] = None,
-        crypto_algorithm: Optional[str] = None,
+        hash_algorithm: str | None = None,
+        crypto_algorithm: str | None = None,
     ) -> str:
         """Sign passed data with private key
 
@@ -299,7 +299,10 @@ class ServerPlatform:
         if hash_algorithm is None:
             hash_algorithm = "SHA256"
         hash_algorithm = hash_algorithm.upper()
-        hash_algorithms_map = {"SHA256": hashes.SHA256}
+        hash_algorithms_map = {
+            "SHA256": hashes.SHA256,
+            "SHA512": hashes.SHA512,
+        }
         try:
             hash_obj = hash_algorithms_map[hash_algorithm]
         except AttributeError:
