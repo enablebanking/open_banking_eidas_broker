@@ -15,8 +15,8 @@ from typing import Union
 from multidict import CIMultiDict
 
 from cryptography.utils import int_to_bytes
-from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.serialization import load_pem_private_key
 from cryptography.hazmat.primitives.asymmetric import ec, padding
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
@@ -143,8 +143,6 @@ class ServerPlatform:
     OB_CERTS_DIR = os.path.abspath(
         os.environ.get("OB_CERTS_DIR", "/app/open_banking_certs")
     )
-
-    hazmat_backend = default_backend()
 
     def _get_ob_certs_file_path(self, path: str) -> str:
         abspath = os.path.abspath(os.path.join(self.OB_CERTS_DIR, path))
@@ -311,7 +309,7 @@ class ServerPlatform:
             )
 
         data = self._force_bytes(data)
-        key = self.hazmat_backend.load_pem_private_key(
+        key = load_pem_private_key(
             open(self._get_ob_certs_file_path(key_path), "rb").read(),
             (lambda p: p.encode("utf-8") if p is not None else None)(
                 _read_key_password(key_path)
