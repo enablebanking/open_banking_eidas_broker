@@ -2,13 +2,13 @@ from fastapi import FastAPI
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-from server_platform import ServerPlatform
-import models
+from app.server_platform import get_server_platform
+from app import models
 
 
 app = FastAPI(title="Open Banking eIDAS broker")
 # We could pass these files' paths from environment variables
-platform = ServerPlatform()
+platform = get_server_platform()
 
 
 @app.exception_handler(Exception)
@@ -38,7 +38,7 @@ async def read_root():
 )
 async def sign(request: models.SignRequest):
     return {
-        "result": await platform.signWithKey(
+        "result": await platform.sign_with_key(
             request.params.data,
             request.params.key_id,
             hash_algorithm=request.params.hash_algorithm,
@@ -54,7 +54,7 @@ async def sign(request: models.SignRequest):
 )
 async def make_request(request: models.MakeRequestRequest):
     return {
-        "result": await platform.makeRequest(
+        "result": await platform.make_request(
             request.params.request, request.params.follow_redirects
         )
     }

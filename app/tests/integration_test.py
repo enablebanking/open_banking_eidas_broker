@@ -4,8 +4,7 @@ import json
 import requests
 import pytest
 
-import config
-import utils
+from . import config, utils
 
 
 def test_health():
@@ -170,7 +169,7 @@ def test_ps_signature():
 def test_timeout():
     with pytest.raises(Exception) as e:
         utils.make_request("GET", config.MOCK_ORIGIN, "/timeout")
-        assert "timed out" in str(e)
+    assert "server error" in str(e)
 
 
 def test_header_encoding():

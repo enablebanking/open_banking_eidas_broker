@@ -1,7 +1,7 @@
 import base64
 import requests
 from typing import Any, NamedTuple, Type
-import config
+from . import config
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric import padding
@@ -68,7 +68,7 @@ def make_request(
         json=request_body,
         verify=False,
         cert=(config.MTLS_CLIENT_CERT_PATH, config.MTLS_CLIENT_KEY_PATH),
-        timeout=300
+        timeout=300,
     )
 
     broker_json = broker_response.json()

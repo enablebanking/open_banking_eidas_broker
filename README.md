@@ -173,6 +173,10 @@ In order to build an image you need to:
    after the key file names, with special characters replaced by underscore symbols, and suffixed with
    `_PASSWORD`. For example, the password for `qwac.key` should be set in the environment variable
    named `QWAC_KEY_PASSWORD`.
+
+   It is also possible to provide keys and certificates as environment variables. In this case, the
+   environment variables should be named with `_CRED` suffix. For example, the QWAC private key should
+    be provided in the `QWAC_KEY_CRED` environment variable.
 6. Start built image:
 
    ```
@@ -272,8 +276,8 @@ result will be always different due to probabilistic behavior of RSASSA-PSS.*
 The service is implemented in Python 3.11. RESTful API of the service is implemented using the FastAPI
 framework.
 
-`ServicePlatform` class from [server_platform.py](app/server_platform.py) contains `signWithKey` and
-`makeRequest` methods, which correspond to `POST /sign` and `POST /makeRequest` API endpoints.
+`ServicePlatform` class from [server_platform.py](app/server_platform.py) contains `sign_with_key` and
+`make_request` methods, which correspond to `POST /sign` and `POST /makeRequest` API endpoints.
 
 Cryptographic operations (necessary for implementation of the `POST /sign` endpoint) use
 [cryptography](https://cryptography.io/) library (which itself depends on the OpenSSL C library).
