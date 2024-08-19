@@ -1,4 +1,4 @@
-aiohttp[speedups]==3.9.5
+aiohttp[speedups]==3.10.4
 cryptography==42.0.4
-uvicorn==0.24.0.post1
+uvicorn==0.30.6
 fastapi==0.109.1

@@ -9,9 +9,7 @@ import logging
 import zipfile
 from io import BytesIO
 import os
-import re
 import ssl
-from typing import Union
 from multidict import CIMultiDict
 
 from cryptography.utils import int_to_bytes
@@ -21,11 +19,8 @@ from cryptography.hazmat.primitives.asymmetric import ec, padding
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
 
-from models import TLS, MakeRequestParams
-
-
-def _read_key_password(key_path: str) -> str | None:
-    return os.environ.get(re.sub(r"[\-\.\/]", "_", key_path).upper() + "_PASSWORD")
+from app.models import TLS, MakeRequestParams
+import app.key_loader as key_loader
 
 
 def _safe_header(string: str) -> str:
@@ -144,36 +139,33 @@ class ServerPlatform:
         os.environ.get("OB_CERTS_DIR", "/app/open_banking_certs")
     )
 
-    def _get_ob_certs_file_path(self, path: str) -> str:
-        abspath = os.path.abspath(os.path.join(self.OB_CERTS_DIR, path))
-        if os.path.commonpath([self.OB_CERTS_DIR, abspath]) != self.OB_CERTS_DIR:
-            raise ValueError(
-                f"{path} is not inside open banking certificates directory"
-            )
-        return abspath
+    def __init__(self, key_loader: key_loader.KeyLoader):
+        self.key_loader = key_loader
+
+    @staticmethod
+    def _set_tls_version_for_ssl_context(
+        ssl_context: ssl.SSLContext, tls_version: str | None = None
+    ) -> None:
+        if tls_version is None:
+            return
+        tls_map = {
+            "TLSv1": ssl.TLSVersion.TLSv1,
+            "TLSv1_1": ssl.TLSVersion.TLSv1_1,
+            "TLSv1_2": ssl.TLSVersion.TLSv1_2,
+            "TLSv1_3": ssl.TLSVersion.TLSv1_3,
+        }
+        forced_tls_version = tls_map.get(tls_version)
+        if forced_tls_version is not None:
+            ssl_context.minimum_version = forced_tls_version
+            ssl_context.maximum_version = forced_tls_version
 
     def get_ssl_context(self, tls: TLS | None) -> ssl.SSLContext:
         if tls:
             ssl_context = ssl.create_default_context()
-            ssl_context.load_cert_chain(
-                self._get_ob_certs_file_path(tls.cert_path),
-                self._get_ob_certs_file_path(tls.key_path),
-                lambda: _read_key_password(tls.key_path),
-            )
-            if tls.ca_cert_path:
-                ssl_context.load_verify_locations(
-                    self._get_ob_certs_file_path(tls.ca_cert_path)
-                )
-
-            if os.getenv("verify_cert", False):
-                if not tls.ca_cert_path:
-                    raise Exception(
-                        "ca_cert_path must be specified when verify_cert is set"
-                    )
-                ssl_context.verify_flags = ssl.CERT_REQUIRED
-            else:
-                ssl_context.check_hostname = False
-                ssl_context.verify_mode = ssl.CERT_NONE
+            ssl_context = self.key_loader.update_ssl_context(ssl_context, tls)
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_NONE
+            self._set_tls_version_for_ssl_context(ssl_context, tls.tls_version)
         else:
             ssl_context = ssl._create_unverified_context()
         return ssl_context
@@ -188,7 +180,7 @@ class ServerPlatform:
             logging.error("Response is not a zip archive")
             return response
 
-    async def makeRequest(
+    async def make_request(
         self, request: MakeRequestParams, follow_redirects: bool | None = True
     ):
         url = request.origin + request.path
@@ -276,9 +268,9 @@ class ServerPlatform:
         r, s = decode_dss_signature(signature)
         return int_to_bytes(r, num_bytes) + int_to_bytes(s, num_bytes)
 
-    async def signWithKey(
+    async def sign_with_key(
         self,
-        data: Union[str, bytes],
+        data: str | bytes,
         key_path: str,
         hash_algorithm: str | None = None,
         crypto_algorithm: str | None = None,
@@ -310,9 +302,9 @@ class ServerPlatform:
 
         data = self._force_bytes(data)
         key = load_pem_private_key(
-            open(self._get_ob_certs_file_path(key_path), "rb").read(),
+            self.key_loader.get_content(key_path),
             (lambda p: p.encode("utf-8") if p is not None else None)(
-                _read_key_password(key_path)
+                key_loader.read_key_password(key_path)
             ),
             True,
         )
@@ -332,3 +324,15 @@ class ServerPlatform:
             signature = key.sign(data, ec.ECDSA(hash_obj()))
             signature = self._decode_signature(signature, hash_algorithm)
         return base64.b64encode(signature).decode("utf8")
+
+
+def get_server_platform() -> ServerPlatform:
+    key_loader_env = os.environ.get("KEY_LOADER", "FILE")
+    match key_loader_env:
+        case "FILE":
+            kl = key_loader.FileKeyLoader()
+        case "ENV":
+            kl = key_loader.EnvKeyLoader()
+        case _:
+            raise ValueError(f"Unsupported key loader: {key_loader_env}")
+    return ServerPlatform(kl)

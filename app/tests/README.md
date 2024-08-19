@@ -18,4 +18,4 @@ Optionally you can modify:
 MOCK_ORIGIN – Origin to a server which is intended to be called by the broker. Default is https://eidas-mock-todjdqftaa-ez.a.run.app
 
 To run tests:  
-`pytest tests`
+`pytest app/tests`

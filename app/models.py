@@ -42,30 +42,32 @@ class SignResponse(BaseModel):
 class TLS(BaseModel):
     cert_path: str
     key_path: str
-    ca_cert_path: str | None = None
+    tls_version: str | None = None
 
 
 class MakeRequestParams(BaseModel):
-    method: str = Field(..., description="HTTP method", example="GET")
+    method: str = Field(..., description="HTTP method", examples=["GET"])
     origin: str = Field(
-        ..., description="Origin of the request", example="https://postman-echo.com"
+        ..., description="Origin of the request", examples=["https://postman-echo.com"]
     )
-    path: str = Field(..., description="Path of the request", example="/get")
+    path: str = Field(..., description="Path of the request", examples=["/get"])
     query: list[tuple[str, str]] = Field(
-        default_factory=list, description="Query parameters", example=[("foo", "bar")]
+        default_factory=list,
+        description="Query parameters",
+        examples=[[("foo", "bar")]],
     )
     body: str = Field(
-        default="", description="Body of the request", example='{"foo": "bar"}'
+        default="", description="Body of the request", examples=['{"foo": "bar"}']
     )
     headers: list[tuple[str, str]] = Field(
         default_factory=list,
         description="Headers of the request",
-        example=[("Content-Type", "application/json")],
+        examples=[[("Content-Type", "application/json")]],
     )
     tls: TLS | None = Field(
         default=None,
         description="TLS configuration",
-        example={"cert_path": "cert.pem", "key_path": "key.pem"},
+        examples=[{"cert_path": "cert.pem", "key_path": "key.pem"}],
     )
 
 
@@ -86,10 +88,10 @@ class MakeRequestResponseResult(BaseModel):
     headers: list[tuple[str, str]] = Field(
         default_factory=list,
         description="Response headers",
-        example=[("Content-Type", "application/json")],
+        examples=[[("Content-Type", "application/json")]],
     )
     response: str = Field(
-        default="", description="Response body", example='{"foo": "bar"}'
+        default="", description="Response body", examples=['{"foo": "bar"}']
     )
 
 

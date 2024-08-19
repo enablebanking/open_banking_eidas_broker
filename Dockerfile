@@ -12,4 +12,4 @@ COPY run.py .
 RUN chmod +x run.sh
 COPY nginx.conf /etc/nginx/sites-available/default
 
-ENTRYPOINT ./run.sh
+ENTRYPOINT ["sh", "run.sh"]
