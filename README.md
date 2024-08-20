@@ -173,11 +173,12 @@ In order to build an image you need to:
    after the key file names, with special characters replaced by underscore symbols, and suffixed with
    `_PASSWORD`. For example, the password for `qwac.key` should be set in the environment variable
    named `QWAC_KEY_PASSWORD`.
-
-   It is also possible to provide keys and certificates as environment variables. In this case, the
-   environment variables should be named with `_CRED` suffix. For example, the QWAC private key should
-    be provided in the `QWAC_KEY_CRED` environment variable.
-6. Start built image:
+   
+   It is also possible to provide keys and certificates as environment variables.
+   In order to enable such functionality, pass `KEY_LOADER=ENV` environment variable when starting a container.
+   In this case, the environment variables should be named with `_CRED` suffix. For example, the QWAC private key should
+   be provided in the `QWAC_KEY_CRED` environment variable.
+7. Start built image:
 
    ```
    docker run -d \
@@ -190,7 +191,7 @@ In order to build an image you need to:
 
    You can also specify `verify_cert` environment variable using `-e` flag if you want you requests to
    ASPSPs to be verified against QWAC certificate chain (if it is provided).
-7. You can verify that the service is running correctly by running the following command:
+8. You can verify that the service is running correctly by running the following command:
 
    ```
    curl --location 'https://localhost:443/' --key client.key --cert client-chain.crt --cacert ca.crt
