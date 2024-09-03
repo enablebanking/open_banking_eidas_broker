@@ -75,9 +75,12 @@ And CA certificate shall be generated (if necessary, replace values under `-subj
 with your values).
 
 ```bash
-openssl req -new -x509 -days 365 -key ca.key -out ca.crt \
+openssl req -new -x509 -days 1825 -key ca.key -out ca.crt \
     -subj "/C=FI/ST=Uusimaa/L=Helsinki/O=ExampleOrganisation/CN=ca.example.com"
 ```
+
+**NB:** In the example above the CA certificate validity period is set to 5 years, which
+allows to rotate server and client certificates without the need to replace CA certificate itself.
 
 ### Server
 
