@@ -93,6 +93,9 @@ class MakeRequestResponseResult(BaseModel):
     response: str = Field(
         default="", description="Response body", examples=['{"foo": "bar"}']
     )
+    certificate: str | None = Field(
+        default=None, description="Server certificate if available", examples=['-----BEGIN CERTIFICATE-----\nMIIDnDCCAyGgAwIBAgISBH8XfncWBVHDh+CIL89ToOonMAoGCCqGSM49BAMDMDIx\nCzAJBgNVBAYTAlVTMRYwFAYDVQQKEw1MZXQncyBFbmNyeXB0MQswCQYDVQQDEwJF\nNjAeFw0yNDA3MjUxMjAyMTFaFw0yNDEwMjMxMjAyMTBaMBwxGjAYBgNVBAMTEWVu\nYWJsZWJhbmtpbmcuY29tMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEIftbwQNg\n+iK2+piedKsdJ0Y9FXEqJKfYmeDR+vYLgm0Zk30lTwoxBoI0W+OitG9BWbKdHn0G\nuNQQobykzNjboqOCAiswggInMA4GA1UdDwEB/wQEAwIHgDAdBgNVHSUEFjAUBggr\nBgEFBQcDAQYIKwYBBQUHAwIwDAYDVR0TAQH/BAIwADAdBgNVHQ4EFgQUp/xnLs/S\nxNZw8eLgBJzbkUj2QHkwHwYDVR0jBBgwFoAUkydGmAOpUWiOmNbEQkjbI79YlNIw\nVQYIKwYBBQUHAQEESTBHMCEGCCsGAQUFBzABhhVodHRwOi8vZTYuby5sZW5jci5v\ncmcwIgYIKwYBBQUHMAKGFmh0dHA6Ly9lNi5pLmxlbmNyLm9yZy8wMwYDVR0RBCww\nKoIRZW5hYmxlYmFua2luZy5jb22CFXd3dy5lbmFibGViYW5raW5nLmNvbTATBgNV\nHSAEDDAKMAgGBmeBDAECATCCAQUGCisGAQQB1nkCBAIEgfYEgfMA8QB3AEiw42va\npkc0D+VqAvqdMOscUgHLVt0sgdm7v6s52IRzAAABkOn8Gi4AAAQDAEgwRgIhANUN\nBFrE/0VUWfG6NbMluXprsa10C5Na8Yb2XHol2KclAiEAhvFxYa+NppZexDU7sBfb\nHr6owVFWVlj+kQ/q/ewIRh0AdgB2/4g/Crb7lVHCYcz1h7o0tKTNuyncaEIKn+Zn\nTFo6dAAAAZDp/BphAAAEAwBHMEUCIQCWS7RU9oGH7dCITs9cuAykl71iop6fBwjq\n0a8rt6T25QIgAbDXYRa+/Qp4alvBrC7XYO4Wmkz9fgv/boRif0rwbdswCgYIKoZI\nzj0EAwMDaQAwZgIxAOX17axdfXrOM43b5JkCzTVYysrG8sjmA3gDJak0xdAo+FPD\neh+L2EZT4Z6xgPsgDgIxAO7EXqyGezmUyKHS22e5O8JduHY6gzxEjZ9G9rX8pkgp\nNcTASPTExl14vvdkRG+O/Q==\n-----END CERTIFICATE-----\n']
+    )
 
 
 class MakeRequestResponse(BaseModel):

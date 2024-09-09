@@ -205,6 +205,13 @@ class ServerPlatform:
                     ssl=ssl_context,
                     allow_redirects=follow_redirects,
                 ) as response:
+                    peercert = None
+                    if response.connection and response.connection.transport:
+                        sslobj = response.connection.transport.get_extra_info("ssl_object")
+                        if sslobj:
+                            peercert = sslobj.getpeercert(True)
+                            if peercert:
+                                peercert = ssl.DER_cert_to_PEM_cert(peercert)
                     if (
                         response.headers.get("Content-Type")
                         == "application/octet-stream"
@@ -221,6 +228,7 @@ class ServerPlatform:
                         "status": response.status,
                         "response": response_text,
                         "headers": response_headers,
+                        "certificate": peercert,
                     }
         except aiohttp.ClientResponseError as e:
             response_headers = (
