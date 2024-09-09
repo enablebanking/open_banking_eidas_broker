@@ -160,14 +160,10 @@ class ServerPlatform:
             ssl_context.maximum_version = forced_tls_version
 
     def get_ssl_context(self, tls: TLS | None) -> ssl.SSLContext:
+        ssl_context = ssl.create_default_context()
         if tls:
-            ssl_context = ssl.create_default_context()
             ssl_context = self.key_loader.update_ssl_context(ssl_context, tls)
-            ssl_context.check_hostname = False
-            ssl_context.verify_mode = ssl.CERT_NONE
             self._set_tls_version_for_ssl_context(ssl_context, tls.tls_version)
-        else:
-            ssl_context = ssl._create_unverified_context()
         return ssl_context
 
     def _handle_binary_response(self, response: bytes) -> bytes:

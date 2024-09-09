@@ -191,9 +191,6 @@ In order to build an image you need to:
        --mount type=bind,source="$(pwd)"/broker_tls/,target=/app/broker_tls/ \
        <image_name>
    ```
-
-   You can also specify `verify_cert` environment variable using `-e` flag if you want you requests to
-   ASPSPs to be verified against QWAC certificate chain (if it is provided).
 8. You can verify that the service is running correctly by running the following command:
 
    ```
