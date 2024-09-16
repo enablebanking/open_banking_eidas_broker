@@ -199,6 +199,28 @@ In order to build an image you need to:
 
    You should received `{"result":"eIDAS broker"}` in response.
 
+## Overriding the list of trusted CA certificates
+
+Although this is not in line with regulations and security best practices, some ASPSPs may use
+self-signed certificates or certificates that do not have commonly recognised CAs in their chains.
+In order to accept connections when such certificates are used, this repository (and pre-built
+images) contains several not commonly recognised certificates in the trust list.
+
+It is also possible to override the list of trusted CA certificates by mounting an external folder
+containing such certificates and overriding the environment variable SSL_CERT_FILE to point to this
+folder. For example:
+
+```
+docker run -d \
+    --name <container_name> \
+    -p 443:80 \
+    --mount type=bind,source="$(pwd)"/open_banking_certs/,target=/app/open_banking_certs/ \
+    --mount type=bind,source="$(pwd)"/broker_tls/,target=/app/broker_tls/ \
+    --mount type=bind,source="$(pwd)"/trusted_ca_certs/,target=/app/trusted_ca_certs/ \
+    -e SSL_CERT_FILE='/app/trusted_ca_certs'
+    <image_name>
+```
+
 ## API specification
 
 Full API specification of in the OpenAPI format is available in the [openapi.json](openapi.json) file.
