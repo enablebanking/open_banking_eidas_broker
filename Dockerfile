@@ -4,6 +4,8 @@ RUN apt update && apt upgrade -y
 RUN apt install -y nginx ca-certificates
 
 COPY requirements.txt .
+RUN pip install --upgrade pip
+RUN pip install --upgrade setuptools
 RUN pip install -r requirements.txt
 COPY ./app /app
 
