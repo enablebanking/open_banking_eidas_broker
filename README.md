@@ -186,7 +186,7 @@ In order to build an image you need to:
    ```
    docker run -d \
        --name <container_name> \
-       -p 443:80 \
+       -p 443:443 \
        --mount type=bind,source="$(pwd)"/open_banking_certs/,target=/app/open_banking_certs/ \
        --mount type=bind,source="$(pwd)"/broker_tls/,target=/app/broker_tls/ \
        <image_name>
@@ -213,7 +213,7 @@ folder. For example:
 ```
 docker run -d \
     --name <container_name> \
-    -p 443:80 \
+    -p 443:443 \
     --mount type=bind,source="$(pwd)"/open_banking_certs/,target=/app/open_banking_certs/ \
     --mount type=bind,source="$(pwd)"/broker_tls/,target=/app/broker_tls/ \
     --mount type=bind,source="$(pwd)"/trusted_ca_certs/,target=/app/trusted_ca_certs/ \
@@ -314,7 +314,7 @@ in the `ServicePlatform` class.
 
 Implementation of secured access to the service (using client TLS certificate verification) relies on
 [nginx](https://nginx.org/). Please refer to [nginx.conf](nginx.conf). *Please notice that this
-configuration uses port 80 for secured connections.*
+configuration uses port 443 for secured connections.*
 
 ### Running service locally without Docker
 
