@@ -1,5 +1,8 @@
+import asyncio
+import sys
+from typing import Optional
 import aiohttp
-from aiohttp import ClientRequest, ClientResponse, helpers, hdrs
+from aiohttp import ClientRequest, ClientResponse, hdrs
 from aiohttp.connector import Connection
 from aiohttp.http_writer import HttpVersion10, HttpVersion11
 from aiohttp.http import StreamWriter
@@ -60,31 +63,31 @@ class Latin1HeadersClientRequest(ClientRequest):
         if self.method == hdrs.METH_CONNECT:
             connect_host = self.url.raw_host
             assert connect_host is not None
-            if helpers.is_ipv6_address(connect_host):
-                connect_host = f"[{connect_host}]"
             path = f"{connect_host}:{self.url.port}"
         elif self.proxy and not self.is_ssl():
             path = str(self.url)
         else:
-            path = self.url.raw_path
-            if self.url.raw_query_string:
-                path += "?" + self.url.raw_query_string
+            path = self.url.raw_path_qs
 
         protocol = conn.protocol
         assert protocol is not None
         writer = Latin1HeadersStreamWriter(
             protocol,
             self.loop,
-            on_chunk_sent=functools.partial(
-                self._on_chunk_request_sent, self.method, self.url
+            on_chunk_sent=(
+                functools.partial(self._on_chunk_request_sent, self.method, self.url)
+                if self._traces
+                else None
             ),
-            on_headers_sent=functools.partial(
-                self._on_headers_request_sent, self.method, self.url
+            on_headers_sent=(
+                functools.partial(self._on_headers_request_sent, self.method, self.url)
+                if self._traces
+                else None
             ),
         )
 
         if self.compress:
-            writer.enable_compression(self.compress)
+            writer.enable_compression(self.compress)  # type: ignore[arg-type]
 
         if self.chunked is not None:
             writer.enable_chunking()
@@ -92,38 +95,53 @@ class Latin1HeadersClientRequest(ClientRequest):
         # set default content-type
         if (
             self.method in self.POST_METHODS
-            and hdrs.CONTENT_TYPE not in self.skip_auto_headers
+            and (
+                self._skip_auto_headers is None
+                or hdrs.CONTENT_TYPE not in self._skip_auto_headers
+            )
             and hdrs.CONTENT_TYPE not in self.headers
         ):
             self.headers[hdrs.CONTENT_TYPE] = "application/octet-stream"
 
-        # set the connection header
-        connection = self.headers.get(hdrs.CONNECTION)
-        if not connection:
-            if self.keep_alive():
-                if self.version == HttpVersion10:
-                    connection = "keep-alive"
-            else:
-                if self.version == HttpVersion11:
-                    connection = "close"
-
-        if connection is not None:
-            self.headers[hdrs.CONNECTION] = connection
+        v = self.version
+        if hdrs.CONNECTION not in self.headers:
+            if conn._connector.force_close:
+                if v == HttpVersion11:
+                    self.headers[hdrs.CONNECTION] = "close"
+            elif v == HttpVersion10:
+                self.headers[hdrs.CONNECTION] = "keep-alive"
 
         # status + headers
-        status_line = "{0} {1} HTTP/{2[0]}.{2[1]}".format(
-            self.method, path, self.version
-        )
+        status_line = f"{self.method} {path} HTTP/{v.major}.{v.minor}"
         await writer.write_headers(status_line, self.headers)
-
-        self._writer = self.loop.create_task(self.write_bytes(writer, conn))
-
+        task: Optional["asyncio.Task[None]"]
+        if self.body or self._continue is not None or protocol.writing_paused:
+            coro = self.write_bytes(writer, conn)
+            if sys.version_info >= (3, 12):
+                # Optimization for Python 3.12, try to write
+                # bytes immediately to avoid having to schedule
+                # the task on the event loop.
+                task = asyncio.Task(coro, loop=self.loop, eager_start=True)
+            else:
+                task = self.loop.create_task(coro)
+            if task.done():
+                task = None
+            else:
+                self._writer = task
+        else:
+            # We have nothing to write because
+            # - there is no body
+            # - the protocol does not have writing paused
+            # - we are not waiting for a 100-continue response
+            protocol.start_timeout()
+            writer.set_eof()
+            task = None
         response_class = self.response_class
         assert response_class is not None
         self.response = response_class(
             self.method,
             self.original_url,
-            writer=self._writer,
+            writer=task,
             continue100=self._continue,
             timer=self._timer,
             request_info=self.request_info,
@@ -177,7 +195,7 @@ class ServerPlatform:
             return response
 
     async def make_request(
-        self, request: MakeRequestParams, follow_redirects: bool | None = True
+        self, request: MakeRequestParams, follow_redirects: bool = True
     ):
         url = request.origin + request.path
         data = request.body.encode()
@@ -199,7 +217,7 @@ class ServerPlatform:
                 async with session.request(
                     method=request.method,
                     url=url,
-                    params=request.query,
+                    params={k: v for k, v in request.query},
                     data=data,
                     headers=request_headers,
                     ssl=ssl_context,
@@ -207,7 +225,9 @@ class ServerPlatform:
                 ) as response:
                     peercert = None
                     if response.connection and response.connection.transport:
-                        sslobj = response.connection.transport.get_extra_info("ssl_object")
+                        sslobj = response.connection.transport.get_extra_info(
+                            "ssl_object"
+                        )
                         if sslobj:
                             peercert = sslobj.getpeercert(True)
                             if peercert is not None:
@@ -231,11 +251,13 @@ class ServerPlatform:
                         "certificate": peercert,
                     }
         except aiohttp.ClientResponseError as e:
-            response_headers = (
-                [(name, value) for name, value in e.headers.items()]
-                if e.headers
-                else []
-            )
+            response_headers = []
+            if e.headers:
+                if isinstance(e.headers, CIMultiDict):
+                    for name, value in e.headers.items():
+                        response_headers.append((name, value))
+                else:
+                    response_headers = e.headers
             return {
                 "status": e.status,
                 "response": e.message,
