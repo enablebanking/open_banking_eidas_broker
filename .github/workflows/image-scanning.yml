@@ -1,0 +1,29 @@
+name: Container Image CI
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build the Container Image
+        run: docker build . --file Dockerfile --tag localbuild/testimage:latest
+
+      - name: Scan Image
+        uses: anchore/scan-action@v3
+        id: scan
+        with:
+          image: "localbuild/testimage:latest"
+          fail-build: true
+          output-format: sarif
+
+      - name: Upload Anchore Scan SARIF Report
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: ${{ steps.scan.outputs.sarif }}
