@@ -21,9 +21,4 @@ jobs:
         with:
           image: "localbuild/testimage:latest"
           fail-build: true
-          output-format: sarif
-
-      - name: Upload Anchore Scan SARIF Report
-        uses: github/codeql-action/upload-sarif@v2
-        with:
-          sarif_file: ${{ steps.scan.outputs.sarif }}
+          output-format: table
