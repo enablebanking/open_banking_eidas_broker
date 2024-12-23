@@ -1,7 +1,7 @@
 FROM python:3.13-slim
 
 RUN apt update && apt upgrade -y
-RUN apt install -y nginx ca-certificates
+RUN apt install nginx ca-certificates -y
 
 COPY requirements.txt .
 RUN pip install --upgrade pip
