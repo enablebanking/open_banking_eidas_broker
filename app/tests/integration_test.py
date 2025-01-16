@@ -8,6 +8,12 @@ from . import config, utils
 
 
 def test_health():
+    # health check is expected to be available over HTTP
+    broker_origin = config.BROKER_ORIGIN.replace("https://", "http://")
+    response = requests.get(broker_origin + "/health")
+    assert response.status_code == 200
+    assert response.text == '{"result":"ok"}'
+
     response = requests.get(config.BROKER_ORIGIN + "/health", verify=False)
     assert response.status_code == 200
     assert response.text == '{"result":"ok"}'
