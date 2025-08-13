@@ -23,4 +23,3 @@ jobs:
           fail-build: true
           output-format: table
           only-fixed: true
-          policy-path: .ignore-cve-policy.yaml
