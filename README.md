@@ -336,4 +336,4 @@ gunicorn app.main:app -c gunicorn_conf.py -k uvicorn.workers.UvicornWorker --bin
 
 --
 
-Copyright 2021 Enable Banking Oy
+Copyright 2025 Enable Banking Oy
