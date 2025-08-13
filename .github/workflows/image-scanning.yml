@@ -23,3 +23,8 @@ jobs:
           fail-build: true
           output-format: table
           only-fixed: true
+          ignore-policy: |
+            rules:
+              - vulnerability:
+                  id: CVE-2025-8194
+                  reason: Not affecting us, as tarfile module is not used anywhere in the project.
