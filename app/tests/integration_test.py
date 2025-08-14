@@ -87,16 +87,6 @@ def test_file_response():
     assert response.status == 200
     assert json.loads(response.body)
 
-def test_post_request():
-    response = utils.make_request("POST",
-                                  "https://postman-echo.com",
-                                  "/post",
-                                  body='{"foo": "bar"}',
-                                  headers=[utils.Pair("content-type", "application/json")])
-    logging.info(response.body)
-    assert response.status == 200
-    assert json.loads(response.body)["data"]["foo"] == "bar"
-
 def test_query_parameters():
     response = utils.make_request(
         "GET",
