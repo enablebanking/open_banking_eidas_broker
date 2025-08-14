@@ -87,6 +87,7 @@ def test_file_response():
     assert response.status == 200
     assert json.loads(response.body)
 
+
 def test_query_parameters():
     response = utils.make_request(
         "GET",
