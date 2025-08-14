@@ -45,13 +45,13 @@ class Latin1HeadersStreamWriter(StreamWriter):
     async def write_headers(
         self, status_line: str, headers: "CIMultiDict[str]"
     ) -> None:
-        """Write request/response status and headers."""
+        """Write headers to the stream."""
         if self._on_headers_sent is not None:
             await self._on_headers_sent(headers)
-
         # status + headers
         buf = _py_serialize_headers(status_line, headers)
-        self._write(buf)
+        self._headers_written = False
+        self._headers_buf = buf
 
 
 class Latin1HeadersClientRequest(ClientRequest):
@@ -61,7 +61,7 @@ class Latin1HeadersClientRequest(ClientRequest):
         # - not CONNECT proxy must send absolute form URI
         # - most common is origin form URI
         if self.method == hdrs.METH_CONNECT:
-            connect_host = self.url.raw_host
+            connect_host = self.url.host_subcomponent
             assert connect_host is not None
             path = f"{connect_host}:{self.url.port}"
         elif self.proxy and not self.is_ssl():
@@ -113,10 +113,13 @@ class Latin1HeadersClientRequest(ClientRequest):
 
         # status + headers
         status_line = f"{self.method} {path} HTTP/{v.major}.{v.minor}"
+
+        # Buffer headers for potential coalescing with body
         await writer.write_headers(status_line, self.headers)
+
         task: Optional["asyncio.Task[None]"]
-        if self.body or self._continue is not None or protocol.writing_paused:
-            coro = self.write_bytes(writer, conn)
+        if self._body or self._continue is not None or protocol.writing_paused:
+            coro = self.write_bytes(writer, conn, self._get_content_length())
             if sys.version_info >= (3, 12):
                 # Optimization for Python 3.12, try to write
                 # bytes immediately to avoid having to schedule
