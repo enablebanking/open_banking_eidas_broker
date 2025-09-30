@@ -12,7 +12,7 @@ COPY ./app /app
 
 # adding trusted banks' self-signed certificates to the trust store
 COPY trusted_aspsps_certs/ /usr/local/share/ca-certificates/
-COPY $(python -m certifi) /usr/local/share/ca-certificates/certifi.crt
+RUN cp $(python -m certifi) /usr/local/share/ca-certificates/certifi.crt
 RUN update-ca-certificates
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
