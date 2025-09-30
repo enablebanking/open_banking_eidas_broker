@@ -11,10 +11,9 @@ RUN pip install -r requirements.txt
 COPY ./app /app
 
 # adding trusted banks' self-signed certificates to the trust store
-COPY trusted_aspsps_certs/ /usr/local/share/ca-certificates/
-RUN cp $(python -m certifi) /usr/local/share/ca-certificates/certifi.crt
-RUN update-ca-certificates
-ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+COPY trusted_aspsps_certs/ /usr/local/share/ca-certificates/trusted_aspsps_certs/
+RUN cat $(python -m certifi) /usr/local/share/ca-certificates/trusted_aspsps_certs/*.crt > /etc/ssl/certs/eidas-broker-ca-bundle.pem
+ENV SSL_CERT_FILE=/etc/ssl/certs/eidas-broker-ca-bundle.pem
 
 COPY run.sh .
 COPY run.py .
