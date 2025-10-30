@@ -1,4 +1,4 @@
-FROM python:3.12.12-slim
+FROM python:3.13.9-slim
 
 
 RUN apt update && apt upgrade -y
