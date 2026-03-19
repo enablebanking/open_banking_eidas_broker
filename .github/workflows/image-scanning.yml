@@ -16,7 +16,7 @@ jobs:
         run: docker build . --file Dockerfile --tag localbuild/testimage:latest
 
       - name: Scan Image
-        uses: anchore/scan-action@v3
+        uses: anchore/scan-action@v7
         id: scan
         with:
           image: "localbuild/testimage:latest"
