@@ -23,7 +23,7 @@ shall be signed using the same CA certificate.
 
 The broker service is primarily designed to be called from [Enable Banking aggregation
 core](https://enablebanking.com/docs/core/latest/), which provides special `BrokerPlatform`
-class offloading signing and mTLS funtionality to the broker. 
+class offloading signing and mTLS funtionality to the broker.
 
 ## Accessing ASPSP APIs through eIDAS broker
 
@@ -36,7 +36,7 @@ The flow of the calls between client, broker service and ASPSP looks like this:
                                      certificate named by the client
    Request signature            <-   and returning the signature
 
-                                     Forwarding the request to an ASPSP 
+                                     Forwarding the request to an ASPSP
 2. OB API request to be sent    ->   over mTLS established with a QWAC     ->   ASPSP gets complete API
                                      certificate named by the client            request, verifies the
                                                                                 signature, and responses
@@ -100,7 +100,7 @@ openssl req -new -key server.key -out server.csr \
     -subj "/C=FI/ST=Uusimaa/L=Helsinki/O=ExampleOrganisation/CN=localhost"
 ```
 
-The server certificate is to be signed with ca.key. **To ensure security DO NOT use md5 
+The server certificate is to be signed with ca.key. **To ensure security DO NOT use md5
 message digest.** In the examples below we use `sha256`.
 
 ```bash
@@ -176,7 +176,7 @@ In order to build an image you need to:
    after the key file names, with special characters replaced by underscore symbols, and suffixed with
    `_PASSWORD`. For example, the password for `qwac.key` should be set in the environment variable
    named `QWAC_KEY_PASSWORD`.
-   
+
    It is also possible to provide keys and certificates as environment variables.
    In order to enable such functionality, pass `KEY_LOADER=ENV` environment variable when starting a container.
    In this case, the environment variables should be named with `_CRED` suffix. For example, the QWAC private key should
@@ -333,6 +333,41 @@ Running the service:
 ```
 gunicorn app.main:app -c gunicorn_conf.py -k uvicorn.workers.UvicornWorker --bind=:8888 --chdir=app
 ```
+
+## Releasing new versions
+
+The Docker images are released in GitHub Packages under
+[eidas_broker](https://github.com/enablebanking/open_banking_eidas_broker/pkgs/container/eidas_broker).
+
+The images are built for the `linux/amd64` architecture.
+
+For each release published in [releases](https://github.com/enablebanking/open_banking_eidas_broker/releases),
+a corresponding Docker image is built and published.
+
+The release process follows these steps:
+
+1. **Tag** the commit in the repository.
+
+2. **Draft release notes** for the new version.
+
+3. **Build and publish** the Docker image to the GitHub Container Registry.
+
+   Before building, ensure you are logged into GHCR:
+   ```bash
+   docker login ghcr.io -u <github_username> -p <personal_access_token_with_write_packages_permission>
+   ```
+
+   Build and push the image for the `linux/amd64` architecture:
+   ```bash
+   docker buildx build --platform linux/amd64 \
+       -t ghcr.io/enablebanking/eidas_broker:<version> \
+       -t ghcr.io/enablebanking/eidas_broker:latest \
+       --push .
+   ```
+
+4. **Update release notes** by adding a link to the published image at the top of the notes:
+
+   `New image: https://github.com/enablebanking/open_banking_eidas_broker/pkgs/container/eidas_broker/000000000?tag=00`
 
 --
 
