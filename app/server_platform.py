@@ -339,7 +339,9 @@ class ServerPlatform:
         )
         signature = b""
         if isinstance(key, RSAPrivateKey):
-            if crypto_algorithm and crypto_algorithm == "PS":
+            if crypto_algorithm is None or crypto_algorithm == "RS":
+                signature = key.sign(data, padding.PKCS1v15(), hash_obj())
+            elif crypto_algorithm == "PS":
                 signature = key.sign(
                     data,
                     padding.PSS(
@@ -348,10 +350,15 @@ class ServerPlatform:
                     hash_obj(),
                 )
             else:
-                signature = key.sign(data, padding.PKCS1v15(), hash_obj())
+                raise ValueError(f"Algorithm {crypto_algorithm} is incompatible with key type RSAPrivateKey")
         elif isinstance(key, ec.EllipticCurvePrivateKey):
-            signature = key.sign(data, ec.ECDSA(hash_obj()))
-            signature = self._decode_signature(signature, hash_algorithm)
+            if crypto_algorithm is None or crypto_algorithm == "EC":
+                signature = key.sign(data, ec.ECDSA(hash_obj()))
+                signature = self._decode_signature(signature, hash_algorithm)
+            else:
+                raise ValueError(f"Algorithm {crypto_algorithm} is incompatible with key type EllipticCurvePrivateKey")
+        else:
+            raise ValueError(f"Unsupported key type: {type(key).__name__}")
         return base64.b64encode(signature).decode("utf8")
 
 

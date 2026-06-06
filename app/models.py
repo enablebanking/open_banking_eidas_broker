@@ -16,6 +16,7 @@ class HashAlgorithm(str, Enum):
 class CryptoAlgorithm(str, Enum):
     RS = "RS"
     PS = "PS"
+    EC = "EC"
 
 
 class SignParams(BaseModel):
@@ -27,7 +28,13 @@ class SignParams(BaseModel):
         HashAlgorithm.SHA256, description="Hash algorithm to use"
     )
     crypto_algorithm: CryptoAlgorithm | None = Field(
-        CryptoAlgorithm.RS, description="Crypto algorithm to use"
+        None,
+        description=(
+            "Crypto algorithm to use. Allowed values: RS (RSA PKCS#1v15, RSA keys only), "
+            "PS (RSA PSS, RSA keys only), EC (ECDSA, EC keys only). "
+            "If omitted, the algorithm is auto-detected from the key format "
+            "(RSA keys default to RS, EC keys default to EC)."
+        ),
     )
 
 
