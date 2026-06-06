@@ -1,3 +1,5 @@
 ignore:
   # tarfile module not used in application, safe to ignore
   - vulnerability: CVE-2025-8194
+  # xml.parsers.expat and xml.etree.ElementTree not used in application, safe to ignore
+  - vulnerability: CVE-2026-7210
