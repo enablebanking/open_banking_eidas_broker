@@ -4,7 +4,9 @@ from typing import Any, NamedTuple, Type
 from . import config
 
 from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives.asymmetric import padding, ec
+from cryptography.hazmat.primitives.asymmetric.utils import encode_dss_signature
+from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric.rsa import (
     RSAPublicKey,
@@ -143,9 +145,10 @@ def verify_signature(
     signature_bytes = base64.urlsafe_b64decode(_base64_add_padding(signature).encode())
     encoded_message = message.encode()
     public_cert = load_pem_x509_certificate(open(cert_path, "rb").read())
-    public_key: RSAPublicKey = public_cert.public_key()  # type: ignore
+    public_key = public_cert.public_key()
     try:
         if crypto_algorithm == "PS":
+            assert isinstance(public_key, RSAPublicKey)
             public_key.verify(
                 signature_bytes,
                 encoded_message,
@@ -155,9 +158,17 @@ def verify_signature(
                 hash_obj(),
             )
         elif crypto_algorithm == "RS":
+            assert isinstance(public_key, RSAPublicKey)
             public_key.verify(
                 signature_bytes, encoded_message, padding.PKCS1v15(), hash_obj()
             )
+        elif crypto_algorithm == "EC":
+            assert isinstance(public_key, EllipticCurvePublicKey)
+            num_bytes = len(signature_bytes) // 2
+            r = int.from_bytes(signature_bytes[:num_bytes], "big")
+            s = int.from_bytes(signature_bytes[num_bytes:], "big")
+            der_sig = encode_dss_signature(r, s)
+            public_key.verify(der_sig, encoded_message, ec.ECDSA(hash_obj()))
         else:
             raise ValueError(f"{crypto_algorithm} crypto algorithm is not supported")
 
