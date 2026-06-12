@@ -1,7 +1,8 @@
 FROM python:3.13.13-slim
 
 
-RUN apt update && apt upgrade -y && apt install -y curl gnupg2 ca-certificates lsb-release debian-archive-keyring
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    curl gnupg2 ca-certificates lsb-release debian-archive-keyring
 
 RUN curl -fsSL https://nginx.org/keys/nginx_signing.key | gpg --dearmor \
     | tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null
@@ -13,7 +14,7 @@ RUN echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] \
 RUN printf "Package: *\nPin: origin nginx.org\nPin-Priority: 900\n" \
     | tee /etc/apt/preferences.d/99nginx
 
-RUN apt update && apt install -y nginx \
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends nginx \
     && apt-get purge -y --auto-remove curl gnupg2 lsb-release \
     && rm -rf /var/lib/apt/lists/*
 
