@@ -1,7 +1,7 @@
 FROM python:3.13.13-slim
 
 
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y && apt-get install -y --no-install-recommends \
     curl gnupg2 ca-certificates lsb-release debian-archive-keyring
 
 RUN curl -fsSL https://nginx.org/keys/nginx_signing.key | gpg --dearmor \
