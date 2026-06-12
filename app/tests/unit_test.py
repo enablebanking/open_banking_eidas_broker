@@ -126,7 +126,7 @@ async def test_sign_with_ec_key_auto_detect():
     ec_key_path = os.path.abspath(os.path.join(os.environ["OB_CERTS_DIR"], "ec_private.key"))
     ec_cert_path = os.path.abspath(os.path.join(os.environ["OB_CERTS_DIR"], "ec_public.crt"))
     signature = await platform.sign_with_key(data, ec_key_path, crypto_algorithm=None)
-    assert utils.verify_signature(signature, data, ec_cert_path, crypto_algorithm="EC")
+    assert utils.verify_signature(signature, data, ec_cert_path, crypto_algorithm="ES")
 
 
 @pytest.mark.asyncio
@@ -135,8 +135,8 @@ async def test_sign_with_ec_key_explicit():
     data = "test"
     ec_key_path = os.path.abspath(os.path.join(os.environ["OB_CERTS_DIR"], "ec_private.key"))
     ec_cert_path = os.path.abspath(os.path.join(os.environ["OB_CERTS_DIR"], "ec_public.crt"))
-    signature = await platform.sign_with_key(data, ec_key_path, crypto_algorithm="EC")
-    assert utils.verify_signature(signature, data, ec_cert_path, crypto_algorithm="EC")
+    signature = await platform.sign_with_key(data, ec_key_path, crypto_algorithm="ES")
+    assert utils.verify_signature(signature, data, ec_cert_path, crypto_algorithm="ES")
 
 
 @pytest.mark.asyncio
@@ -163,7 +163,7 @@ async def test_sign_with_rsa_key_ec_incompatible():
     data = "test"
     rsa_key_path = os.path.abspath(os.path.join(os.environ["OB_CERTS_DIR"], "private.key"))
     with pytest.raises(ValueError):
-        await platform.sign_with_key(data, rsa_key_path, crypto_algorithm="EC")
+        await platform.sign_with_key(data, rsa_key_path, crypto_algorithm="ES")
 
 
 @pytest.mark.asyncio

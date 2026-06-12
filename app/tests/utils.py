@@ -162,7 +162,7 @@ def verify_signature(
             public_key.verify(
                 signature_bytes, encoded_message, padding.PKCS1v15(), hash_obj()
             )
-        elif crypto_algorithm == "EC":
+        elif crypto_algorithm == "ES":
             assert isinstance(public_key, EllipticCurvePublicKey)
             num_bytes = len(signature_bytes) // 2
             r = int.from_bytes(signature_bytes[:num_bytes], "big")

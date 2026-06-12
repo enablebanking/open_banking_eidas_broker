@@ -352,7 +352,7 @@ class ServerPlatform:
             else:
                 raise ValueError(f"Algorithm {crypto_algorithm} is incompatible with key type RSAPrivateKey")
         elif isinstance(key, ec.EllipticCurvePrivateKey):
-            if crypto_algorithm is None or crypto_algorithm == "EC":
+            if crypto_algorithm is None or crypto_algorithm == "ES":
                 signature = key.sign(data, ec.ECDSA(hash_obj()))
                 signature = self._decode_signature(signature, hash_algorithm)
             else:
