@@ -174,3 +174,15 @@ async def test_sign_with_rsa_key_auto_detect():
     rsa_cert_path = os.path.abspath(os.path.join(os.environ["OB_CERTS_DIR"], "public.crt"))
     signature = await platform.sign_with_key(data, rsa_key_path, crypto_algorithm=None)
     assert utils.verify_signature(signature, data, rsa_cert_path, crypto_algorithm="RS")
+
+
+def test_latin1_header_serialization():
+    # non-ASCII headers must be latin-1 encoded, not utf-8.
+    from multidict import CIMultiDict
+
+    value = "Serviços de Certificação Electrónica S.A."
+    buf = server_platform._py_serialize_headers(
+        "GET / HTTP/1.1", CIMultiDict([("X-Test", value)])
+    )
+    assert value.encode("latin-1") in buf
+    assert value.encode("utf-8") not in buf
