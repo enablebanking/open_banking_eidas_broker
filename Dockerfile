@@ -32,6 +32,6 @@ ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 COPY run.sh .
 COPY run.py .
 RUN chmod +x run.sh
-COPY nginx.conf /etc/nginx/sites-available/default
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 ENTRYPOINT ["sh", "run.sh"]
