@@ -3,3 +3,10 @@ ignore:
   - vulnerability: CVE-2025-8194
   # xml.parsers.expat and xml.etree.ElementTree not used in application, safe to ignore
   - vulnerability: CVE-2026-7210
+  # tarfile.extractall() not used in application, safe to ignore
+  - vulnerability: CVE-2026-11940
+  # html.parser not used in application, safe to ignore
+  - vulnerability: CVE-2026-15308
+  # tarfile module not used in application, safe to ignore
+  - vulnerability: CVE-2026-11972
+
