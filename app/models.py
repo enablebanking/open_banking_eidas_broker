@@ -65,7 +65,7 @@ class MakeRequestParams(BaseModel):
     )
     body: str | None = Field(
         default="",
-        description="Body of the request. If null, no body and no Content-Type header are sent",
+        description="Body of the request. If null, no body is sent and no default Content-Type is added",
         examples=['{"foo": "bar"}'],
     )
     headers: list[tuple[str, str]] = Field(
