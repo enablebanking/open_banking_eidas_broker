@@ -3,10 +3,12 @@ import pytest
 from unittest.mock import patch
 import ssl
 
+from aiohttp import web
+
 from . import utils
 
 os.environ["OB_CERTS_DIR"] = "app/tests"
-from .. import main, server_platform, key_loader
+from .. import main, server_platform, key_loader, models
 
 pytest_plugins = ("pytest_asyncio",)
 
@@ -186,3 +188,45 @@ def test_latin1_header_serialization():
     )
     assert value.encode("latin-1") in buf
     assert value.encode("utf-8") not in buf
+
+
+@pytest.mark.asyncio
+async def test_make_request_null_body():
+    received = []
+
+    async def handler(request):
+        received.append((request.headers.get("Content-Type"), await request.read()))
+        return web.Response(text="ok")
+
+    app = web.Application()
+    app.router.add_post("/", handler)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, "127.0.0.1", 0)
+    await site.start()
+    port = runner.addresses[0][1]
+    try:
+        platform = server_platform.get_server_platform()
+        for body, headers in (
+            (None, []),
+            (None, [("Content-Type", "application/json")]),
+            ("", []),
+            ('{"foo": "bar"}', []),
+        ):
+            response = await platform.make_request(
+                models.MakeRequestParams(
+                    method="POST",
+                    origin=f"http://127.0.0.1:{port}",
+                    path="/",
+                    body=body,
+                    headers=headers,
+                )
+            )
+            assert response["status"] == 200
+    finally:
+        await runner.cleanup()
+
+    assert received[0] == (None, b"")
+    assert received[1] == ("application/json", b"")
+    assert received[2] == ("application/octet-stream", b"")
+    assert received[3] == ("application/octet-stream", b'{"foo": "bar"}')

@@ -63,8 +63,10 @@ class MakeRequestParams(BaseModel):
         description="Query parameters",
         examples=[[("foo", "bar")]],
     )
-    body: str = Field(
-        default="", description="Body of the request", examples=['{"foo": "bar"}']
+    body: str | None = Field(
+        default="",
+        description="Body of the request. If null, no body is sent and no default Content-Type is added",
+        examples=['{"foo": "bar"}'],
     )
     headers: list[tuple[str, str]] = Field(
         default_factory=list,
