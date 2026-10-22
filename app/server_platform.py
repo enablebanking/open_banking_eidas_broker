@@ -202,7 +202,7 @@ class ServerPlatform:
         self, request: MakeRequestParams, follow_redirects: bool = True
     ):
         url = request.origin + request.path
-        data = request.body.encode()
+        data = request.body.encode() if request.body is not None else None
         request_headers = dict(request.headers)
         logging.debug(
             "Request(%r, %r, params=%r, headers=%r, method=%r)",
@@ -224,6 +224,7 @@ class ServerPlatform:
                     params={k: v for k, v in request.query},
                     data=data,
                     headers=request_headers,
+                    skip_auto_headers=[hdrs.CONTENT_TYPE] if data is None else None,
                     ssl=ssl_context,
                     allow_redirects=follow_redirects,
                 ) as response:

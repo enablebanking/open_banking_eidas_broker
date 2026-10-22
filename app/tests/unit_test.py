@@ -186,3 +186,38 @@ def test_latin1_header_serialization():
     )
     assert value.encode("latin-1") in buf
     assert value.encode("utf-8") not in buf
+
+
+@pytest.mark.asyncio
+async def test_make_request_null_body():
+    from aiohttp import web
+    from ..models import MakeRequestParams
+
+    received = []
+
+    async def handler(request):
+        received.append((request.headers.get("Content-Type"), await request.read()))
+        return web.Response(text="ok")
+
+    app = web.Application()
+    app.router.add_post("/", handler)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, "127.0.0.1", 0)
+    await site.start()
+    port = site._server.sockets[0].getsockname()[1]
+    try:
+        platform = server_platform.get_server_platform()
+        for body in (None, "", '{"foo": "bar"}'):
+            response = await platform.make_request(
+                MakeRequestParams(
+                    method="POST", origin=f"http://127.0.0.1:{port}", path="/", body=body
+                )
+            )
+            assert response["status"] == 200
+    finally:
+        await runner.cleanup()
+
+    assert received[0] == (None, b"")
+    assert received[1] == ("application/octet-stream", b"")
+    assert received[2] == ("application/octet-stream", b'{"foo": "bar"}')
